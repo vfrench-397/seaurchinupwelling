@@ -3,26 +3,73 @@ title: "Sea-urchin-Upwelling-HW2"
 output: html_document
 ---
 
-Introduction
+##Introduction##
+
+Title: 
+Authors: 
+Victoria French
+Madison Pacaro 
+Jamie Poirier 
 
 
-Version Control 
+
+
+##Version Control## 
+
+R 4.0.2 
+DESeq2 1.28.1
+affycoretools 1.60.1
+arrayQualityMetrics 3.46.0
+genefilter 1.70.0
+Biobase 2.48.0
+
+```{r}
+
+getRversion()
+
+#DESeq
+packageVersion("DESeq2")
+packageVersion("affycoretools")
+packageVersion("arrayQualityMetrics")
+packageVersion("genefilter")
+packageVersion("Biobase")
+
+#GO 
+
+#WGCNA
+
+```
+
+
+##Data Analysis##
 
 ```{r}
 #Loadpackages 
+
+#DESeq 
 library(DESeq2) 
 library(affycoretools)
 library(arrayQualityMetrics)
 library(genefilter)
 library(Biobase)
 
-#Version
-getRversion()
-packageVersion("DESeq2")
-packageVersion("affycoretools")
-packageVersion("arrayQualityMetrics")
-packageVersion("genefilter")
-packageVersion("Biobase")
+#GO
+
+#WGCNA
+
+```
+
+```{r}
+#Setwd
+#setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling")
+
+```
+
+```{r}
+#create countdata variable 
+countData <- read.table(file= "geneCounts_02122019.txt")
+head(countData)
+
 ```
 
 
