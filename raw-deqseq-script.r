@@ -15,6 +15,7 @@ countData <- read.table("Crep_counts.txt")
 head(countData)
 length(countData[,1])
 #19717
+
 names(countData)=c( "pH7.5a", "pH7.5b", "pH7.5c", "pH7.6a", "pH7.6b", "pH7.6c", "pH8a", "pH8b",  "pH8c")
 row.names(countData)=sub("", "isogroup", rownames(countData))
 head(countData)
@@ -34,16 +35,22 @@ dds=DESeqDataSetFromMatrix(countData=countData,
 
 vsd.ge=assay(vst(dds))
 rl=vst(dds)
+
+
 e=ExpressionSet(assay(rl), AnnotatedDataFrame(as.data.frame(colData(rl))))
 arrayQualityMetrics(e,outdir=v,intgroup=c("treat"),force=T)
-dev.off()
-# double-click index.html
+##dev.off() #Just for windows 
+#double-click index.html
 
 #####you only ever need to run the above code once. Outliers are decided at the beginning. 
 ## I like to close R and restart with packages etc
 ##So, please save your script and restart R
 #no outliers detected!
+#outliers detected under *1, *2, *3
+#low or high sequencing depth can create outliers 
+#remove outliers from counts file and matrix of call data 
 
+#Redoing everything with removed outliers? 
 setwd("~/Dropbox/BU/BU_Teaching/BI586_EEG/2021/Deseq_lab")
 library("DESeq2")
 library("ggplot2")
@@ -59,19 +66,21 @@ row.names(countData)=sub("", "isogroup", rownames(countData))
 head(countData)
 
 totalCounts=colSums(countData)
-totalCounts
+totalCounts #total number of raw counts to report in final table 
 barplot(totalCounts, col=c("coral", "coral", "coral", "red", "red", "red", "blue", "blue", "blue"), ylab="raw counts")
+#check for even/uniform distribution 
 
 # # pH7.5a  pH7.5b  pH7.5c  pH7.6a  pH7.6b  pH7.6c    pH8a    pH8b    pH8c 
 # 789550  918366 1027861  926497  816054  770342  612258  651727  480153 
 min(totalCounts) #480183
 max(totalCounts)  # 1027844
 
-treat=c( "pH7.5", "pH7.5", "pH7.5", "pH7.6", "pH7.6", "pH7.6", "pH8", "pH8",  "pH8")
+treat=c( "pH7.5", "pH7.5", "pH7.5", "pH7.6", "pH7.6", "pH7.6", "pH8", "pH8",  "pH8") 
 g=data.frame(treat)
 g
 colData<- g
 
+#creating DESeq object
 dds<-DESeqDataSetFromMatrix(countData=countData, colData=colData, design=~treat) #can only test for the main effects of site, pco2, temp
 
 #one step DESeq
@@ -88,21 +97,22 @@ res<- results(dds)
 
 #Look at dispersions plot
 plotDispEsts(dds, main="Dispersion plot Snails")
+#want to look like hockey stick; essentially visual representation of DESeq
 
 ####################pH8 vs pH7.6 pairwise comparisons
 colData$pH76<-factor(colData$treat, levels=c("pH7.6","pH8"))
-##second term is the "control"
 respH76 <- results(dds, contrast=c("treat","pH7.6","pH8"))
 #how many FDR < 10%?
-table(respH76$padj<0.01)
+table(respH76$padj<0.01) 
 # 0.1=486
 # 0.05=381
 # 0.01=242
 summary(respH76)
 
-nrow(respH76[respH76$padj<0.05 & !is.na(respH76$padj),])  # Num significantly differentially expressed genes excluding the no/low count genes   #228
+nrow(respH76[respH76$padj<0.05 & !is.na(respH76$padj),])   # Num significantly differentially expressed genes excluding the no/low count genes   #228
 
-dev.off()
+#dev.off()
+
 plotMA(respH76, main="pH8 vs pH7.6")
 plotMA(respH76, main="pH8 vs pH7.6", ylim=c(-2,2))
 
@@ -114,7 +124,8 @@ nrow(respH76[respH76$padj<0.1 & respH76$log2FoldChange < 0 & !is.na(respH76$padj
 #UP in 7.6 66
 #DOWN in 7.6 420
 
-write.table(respH76, file="7.6_2016.txt", quote=F, sep="\t")
+
+write.table(respH76, file="7.6_2016.txt", quote=F, sep="\t") #include in paper
 
 cd <- read.table("7.6_2016.txt")
 head(cd)
