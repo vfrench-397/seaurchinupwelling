@@ -68,8 +68,56 @@ library(Biobase)
 ```{r}
 #create countdata variable 
 countData <- read.table(file= "geneCounts_02122019.txt")
+names(countData)=c("NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
+row.names(countData)=sub("", "isogroup", rownames(countData))
 head(countData)
+length(countData[,1])
+```
 
+```{r}
+#Outliers
+
+treat=c("NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
+
+#Creating coldata; data frame associating sample with treatment
+g=data.frame(treat)
+g
+colData=g
+
+#Calling on DESeq2 to create a model; storing results of analysis of differential expression; asking how our design varies by treatment 
+dds=DESeqDataSetFromMatrix(countData=countData,
+                           colData = g,
+                           design = ~treat)
+
+#Normalizing Data 
+vsd.ge=assay(vst(dds))
+rl=vst(dds)
+
+
+#Identifying outliers in data
+e=ExpressionSet(assay(rl), AnnotatedDataFrame(as.data.frame(colData(rl))))
+arrayQualityMetrics(e,outdir=v,intgroup=c("treat"),force=T)
+```
+
+```{r}
+#Total Counts 
+
+totalCounts
+#NN1 #NN2 #NN3 #UU1 #UU2 #UU3 
+#8555156 #8577700 #8948115 #8570174 #7455015 #6376636
+barplot(totalCounts, col=c("coral", "coral", "coral", "red", "red", "red"), ylab="raw counts")
+#raw counts generally uniformly distributed! Good signal for normalization 
+
+min(totalCounts) #our number is 6376636
+max(totalCounts)  # our number is 8948115
+```
+
+```{r}
+#Creating DESeq Object 
+dds<-DESeqDataSetFromMatrix(countData=countData, colData=colData, design= ~ treat)
+
+#one step DESeq
+dds<-DESeq(dds)
 ```
 
 
