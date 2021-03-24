@@ -1,8 +1,9 @@
 # source("http://bioconductor.org/biocLite.R")
 # biocLite("DESeq2")
 
-#set your working directory
-setwd("~/Dropbox/BU/BU_Teaching/BI586_EEG/2021/Deseq_lab") #you will need to change to your own directory
+#set your working directory- will need to add paths for each of your computers
+setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling")
+getwd()
 
 ###conduct array quality metrics to detect and remove outliers
 library(DESeq2) 
@@ -10,20 +11,24 @@ library(affycoretools)
 library(arrayQualityMetrics)
 library(genefilter)
 library(Biobase)
+
 #read in counts 
-countData <- read.table("Crep_counts.txt")
+countData <- read.table("geneCounts_02122019.txt")
+View(countData)
 head(countData)
 length(countData[,1])
-#19717
-names(countData)=c( "pH7.5a", "pH7.5b", "pH7.5c", "pH7.6a", "pH7.6b", "pH7.6c", "pH8a", "pH8b",  "pH8c")
+#our length is 30284
+names(countData)=c("NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
 row.names(countData)=sub("", "isogroup", rownames(countData))
 head(countData)
 
 
-setwd("~/Dropbox/BU/BU_Teaching/BI586_EEG/2021/Deseq_lab/outlier")
-v=setwd("~/Dropbox/BU/BU_Teaching/BI586_EEG/2021/Deseq_lab/outlier")
+#will have to change these paths for each one of your computers
+setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling/outlier")
+getwd()
+v=setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling/outlier")
 # # # #look for outliers
-treat=c( "pH7.5", "pH7.5", "pH7.5", "pH7.6", "pH7.6", "pH7.6", "pH8", "pH8",  "pH8")
+treat=c("NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
 g=data.frame(treat)
 g
 colData= g
@@ -44,30 +49,33 @@ dev.off()
 ##So, please save your script and restart R
 #no outliers detected!
 
-setwd("~/Dropbox/BU/BU_Teaching/BI586_EEG/2021/Deseq_lab")
+#will need to change wd for each computer
+setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling")
+getwd()
 library("DESeq2")
 library("ggplot2")
 
 #read in counts 
-countData <- read.table("Crep_counts.txt")
+countData <- read.table("geneCounts_02122019.txt")
 head(countData)
 length(countData[,1])
-#19717
+#our length is 30284
 
-names(countData)=c( "pH7.5a", "pH7.5b", "pH7.5c", "pH7.6a", "pH7.6b", "pH7.6c", "pH8a", "pH8b",  "pH8c")
+names(countData)=c( "NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
 row.names(countData)=sub("", "isogroup", rownames(countData))
 head(countData)
 
 totalCounts=colSums(countData)
 totalCounts
-barplot(totalCounts, col=c("coral", "coral", "coral", "red", "red", "red", "blue", "blue", "blue"), ylab="raw counts")
+barplot(totalCounts, col=c("coral", "coral", "coral", "red", "red", "red"), ylab="raw counts")
+#not sure if we should have a different color for each group?
 
 # # pH7.5a  pH7.5b  pH7.5c  pH7.6a  pH7.6b  pH7.6c    pH8a    pH8b    pH8c 
 # 789550  918366 1027861  926497  816054  770342  612258  651727  480153 
-min(totalCounts) #480183
-max(totalCounts)  # 1027844
+min(totalCounts) #our number is 6376636
+max(totalCounts)  # our number is 8948115
 
-treat=c( "pH7.5", "pH7.5", "pH7.5", "pH7.6", "pH7.6", "pH7.6", "pH8", "pH8",  "pH8")
+treat=c( "NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
 g=data.frame(treat)
 g
 colData<- g
@@ -85,6 +93,9 @@ dds<-DESeq(dds)
 
 head(dds)
 res<- results(dds)
+
+#this is where I stopped and everything after this still has old data from the deseq lab
+
 
 #Look at dispersions plot
 plotDispEsts(dds, main="Dispersion plot Snails")
