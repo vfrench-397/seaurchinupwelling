@@ -17,10 +17,8 @@ countData <- read.table("geneCounts_02122019.txt")
 View(countData)
 head(countData)
 length(countData[,1])
-<<<<<<< HEAD
 #our length is 30284
 names(countData)=c("NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
->>>>>>> a34d161ee853db361edb6700e432eb4be12170fa
 row.names(countData)=sub("", "isogroup", rownames(countData))
 head(countData)
 
@@ -29,38 +27,51 @@ head(countData)
 setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling/outlier")
 getwd()
 v=setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling/outlier")
+
+setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling")
+v= setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling/outlier")
+
 # # # #look for outliers
 treat=c("NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
+#Why not NU and UN treatments in count data?
+
+#Creating coldata; data frame associating sample with treatment
 g=data.frame(treat)
 g
-colData= g
+colData=g
 
+#Calling on DESeq2 to create a model; storing results of analysis of differential expression; asking how our design varies by treatment 
 dds=DESeqDataSetFromMatrix(countData=countData,
                            colData = g,
                            design = ~treat)
 
+#Normalizing Data 
 vsd.ge=assay(vst(dds))
 rl=vst(dds)
 
 
+#Identifying outliers in data
 e=ExpressionSet(assay(rl), AnnotatedDataFrame(as.data.frame(colData(rl))))
 arrayQualityMetrics(e,outdir=v,intgroup=c("treat"),force=T)
-##dev.off() #Just for windows 
+
+##dev.off() 
 #double-click index.html
 
 #####you only ever need to run the above code once. Outliers are decided at the beginning. 
 ## I like to close R and restart with packages etc
 ##So, please save your script and restart R
-#no outliers detected!
-#outliers detected under *1, *2, *3
+#no outliers detected! 
+  #Looks like outlier is UU3 detected under "Distances between arrays"; remove that whole replication? 
 #low or high sequencing depth can create outliers 
-#remove outliers from counts file and matrix of call data 
+#remove outliers from counts file and matrix of call data; HOW? 
 
 
 #will need to change wd for each computer
 setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling")
 getwd()
->>>>>>> a34d161ee853db361edb6700e432eb4be12170fa
+
+setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling")
+
 library("DESeq2")
 library("ggplot2")
 
@@ -75,30 +86,29 @@ row.names(countData)=sub("", "isogroup", rownames(countData))
 head(countData)
 
 totalCounts=colSums(countData)
-<<<<<<< HEAD
-totalCounts #total number of raw counts to report in final table 
-barplot(totalCounts, col=c("coral", "coral", "coral", "red", "red", "red", "blue", "blue", "blue"), ylab="raw counts")
-#check for even/uniform distribution 
-=======
+
 totalCounts
+#NN1 #NN2 #NN3 #UU1 #UU2 #UU3 
+#8555156 #8577700 #8948115 #8570174 #7455015 #6376636
 barplot(totalCounts, col=c("coral", "coral", "coral", "red", "red", "red"), ylab="raw counts")
 #not sure if we should have a different color for each group?
->>>>>>> a34d161ee853db361edb6700e432eb4be12170fa
+#I think a diff color for each treatment not necessarily each replicate 
+#raw counts generally uniformly distributed! Good signal for normalization 
 
-# # pH7.5a  pH7.5b  pH7.5c  pH7.6a  pH7.6b  pH7.6c    pH8a    pH8b    pH8c 
-# 789550  918366 1027861  926497  816054  770342  612258  651727  480153 
+
+
 min(totalCounts) #our number is 6376636
 max(totalCounts)  # our number is 8948115
 
 
 treat=c( "NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
->>>>>>> a34d161ee853db361edb6700e432eb4be12170fa
+#Treatment = upwelling vs. nonupwelling conditions 
 g=data.frame(treat)
 g
 colData<- g
 
 #creating DESeq object
-dds<-DESeqDataSetFromMatrix(countData=countData, colData=colData, design=~treat) #can only test for the main effects of site, pco2, temp
+dds<-DESeqDataSetFromMatrix(countData=countData, colData=colData, design= ~ treat) #can only test for the main effects of site, pco2, temp
 
 #one step DESeq
 dds<-DESeq(dds)
@@ -109,6 +119,14 @@ dds<-DESeq(dds)
 # final dispersion estimates
 # fitting model and testing
 
+#Getting Error; think it has to do with design formula 
+
+#Error in checkForExperimentalReplicates(object, modelMatrix) : 
+  
+  #The design matrix has the same number of samples and coefficients to fit,
+#so estimation of dispersion is not possible. Treating samples
+#as replicates was deprecated in v1.20 and no longer supported since v1.22.
+
 head(dds)
 res<- results(dds)
 
@@ -117,7 +135,6 @@ res<- results(dds)
 
 #Look at dispersions plot
 plotDispEsts(dds, main="Dispersion plot Snails")
-#want to look like hockey stick; essentially visual representation of DESeq
 
 ####################pH8 vs pH7.6 pairwise comparisons
 colData$pH76<-factor(colData$treat, levels=c("pH7.6","pH8"))
