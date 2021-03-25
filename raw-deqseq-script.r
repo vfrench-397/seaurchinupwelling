@@ -94,7 +94,7 @@ dds<-DESeq(dds)
 head(dds)
 res<- results(dds)
 
-#this is where I stopped and everything after this still has old data from the deseq lab
+#***********this is where I stopped and everything after this still has old data from the deseq lab*************************
 
 
 #Look at dispersions plot
