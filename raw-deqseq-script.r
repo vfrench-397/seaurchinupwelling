@@ -19,8 +19,8 @@ head(countData)
 length(countData[,1])
 #our length is 30284 - this is the number of genes we have represented
 #here we are renaming our data and adding isogroup to each sample to make data look better
-names(countData)=c("NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
-row.names(countData)=sub("", "isogroup", rownames(countData))
+names(countData)=c("NN", "NN", "NN", "UU", "UU", "UU")
+#row.names(countData)=sub("", "isogroup", rownames(countData))
 head(countData)
 
 
@@ -33,7 +33,7 @@ setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling")
 v= setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling/outlier")
 
 # # # #look for outliers
-treat=c("NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
+treat=c("NN", "NN", "NN", "UU", "UU", "UU")
 #Why not NU and UN treatments in count data?
 
 #Creating coldata; data frame associating sample with treatment
@@ -87,7 +87,7 @@ head(countData)
 length(countData[,1])
 #our length is 30284
 
-names(countData)=c( "NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
+names(countData)=c( "NN", "NN", "NN", "UU", "UU", "UU")
 row.names(countData)=sub("", "isogroup", rownames(countData))
 head(countData)
 
@@ -106,7 +106,7 @@ min(totalCounts) #our number is 6376636
 max(totalCounts)  # our number is 8948115
 
 
-treat=c( "NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
+treat=c( "NN", "NN", "NN", "UU", "UU", "UU")
 #Treatment = upwelling vs. nonupwelling conditions 
 g=data.frame(treat)
 g
@@ -135,7 +135,7 @@ dds<-DESeq(dds)
 
 head(dds)
 res<- results(dds)
-
+res
 
 
 #everything after this still has old data from deseq lab
@@ -143,53 +143,63 @@ res<- results(dds)
 
 #Look at dispersions plot
 plotDispEsts(dds, main="Dispersion plot Snails")
+#this should look like hockey stick, this is visual representation of deseq
 
-####################pH8 vs pH7.6 pairwise comparisons
-colData$pH76<-factor(colData$treat, levels=c("pH7.6","pH8"))
-respH76 <- results(dds, contrast=c("treat","pH7.6","pH8"))
+####################upwelling vs nonupwelling pairwise comparisons
+colData$UU<-factor(colData$treat, levels=c("UU","NN"))
+resUU <- results(dds, contrast=c("treat","UU","NN"))
 #how many FDR < 10%?
-table(respH76$padj<0.01) 
-# 0.1=486
-# 0.05=381
-# 0.01=242
-summary(respH76)
+table(resUU$padj<0.001) 
+# 0.1=3039 - not valuable
+# 0.05=2289
+# 0.01=1344
+# 0.001 = 715
+summary(resUU)
 
-nrow(respH76[respH76$padj<0.05 & !is.na(respH76$padj),])   # Num significantly differentially expressed genes excluding the no/low count genes   #228
+nrow(resUU[resUU$padj<0.05 & !is.na(resUU$padj),])   # Num significantly differentially expressed genes excluding the no/low count genes   #228
+#2289
 
 #dev.off()
 
-plotMA(respH76, main="pH8 vs pH7.6")
-plotMA(respH76, main="pH8 vs pH7.6", ylim=c(-2,2))
+plotMA(resUU, main="NN vs UU") #leave at ylim 4,-4
+#plotMA(resUU, main="NN vs UU", ylim=c(-6,6))
+#maybe mess around with ylim, first plot looks ok
 
-results <- as.data.frame(respH76)
+results <- as.data.frame(resUU)
 head(results)
 
-nrow(respH76[respH76$padj<0.1 & respH76$log2FoldChange > 0 & !is.na(respH76$padj),])
-nrow(respH76[respH76$padj<0.1 & respH76$log2FoldChange < 0 & !is.na(respH76$padj),])
-#UP in 7.6 66
-#DOWN in 7.6 420
+nrow(resUU[resUU$padj<0.1 & resUU$log2FoldChange > 0 & !is.na(resUU$padj),])
+#this is looking at upregulated bc logfold > 0
+nrow(resUU[resUU$padj<0.1 & resUU$log2FoldChange < 0 & !is.na(resUU$padj),])
+#UP in UU is 1735
+#DOWN in UU is 1304
 
 
-write.table(respH76, file="7.6_2016.txt", quote=F, sep="\t") #include in paper
+write.table(resUU, file="UU_DEG.txt", quote=F, sep="\t") #include in paper
+#this is results summary from above in .txt format and is saved in the outlier folder 
 
-cd <- read.table("7.6_2016.txt")
+cd <- read.table("UU_DEG.txt")
 head(cd)
 
 ##make the GO table for MWU
 head(cd)
 
+#*********this is where we stopped in class****************
+
 library(dplyr)
 cd
-go_input_7.6 = cd %>%
+go_input_UU = cd %>%
   tibble::rownames_to_column(var = "iso") %>%
   mutate(mutated_p = -log(pvalue)) %>%
   mutate(mutated_p_updown = ifelse(log2FoldChange < 0, mutated_p*-1, mutated_p*1)) %>%
   na.omit() %>%
   select(iso, mutated_p_updown)
-head(go_input_7.6)
-colnames(go_input_7.6) <- c("gene", "pval")
-head(go_input_7.6)
-write.csv(go_input_7.6, file="7.6_GO.csv", quote=F, row.names=FALSE)
+head(go_input_UU)
+colnames(go_input_UU) <- c("gene", "pval")
+head(go_input_UU)
+write.csv(go_input_UU, file="UU_GO.csv", quote=F, row.names=FALSE)
+
+
 
 #########################################################################################################
 ###Pco2 pH8 vs pH7.5
