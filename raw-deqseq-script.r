@@ -27,31 +27,51 @@ head(countData)
 setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling/outlier")
 getwd()
 v=setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling/outlier")
+
+setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling")
+v= setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling/outlier")
+
 # # # #look for outliers
 treat=c("NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
+#Why not NU and UN treatments in count data?
+
+#Creating coldata; data frame associating sample with treatment
 g=data.frame(treat)
 g
-colData= g
+colData=g
 
+#Calling on DESeq2 to create a model; storing results of analysis of differential expression; asking how our design varies by treatment 
 dds=DESeqDataSetFromMatrix(countData=countData,
                            colData = g,
                            design = ~treat)
 
+#Normalizing Data 
 vsd.ge=assay(vst(dds))
 rl=vst(dds)
+
+
+#Identifying outliers in data
 e=ExpressionSet(assay(rl), AnnotatedDataFrame(as.data.frame(colData(rl))))
 arrayQualityMetrics(e,outdir=v,intgroup=c("treat"),force=T)
-dev.off()
-# double-click index.html
+
+##dev.off() 
+#double-click index.html
 
 #####you only ever need to run the above code once. Outliers are decided at the beginning. 
 ## I like to close R and restart with packages etc
 ##So, please save your script and restart R
-#no outliers detected!
+#no outliers detected! 
+  #Looks like outlier is UU3 detected under "Distances between arrays"; remove that whole replication? 
+#low or high sequencing depth can create outliers 
+#remove outliers from counts file and matrix of call data; HOW? 
+
 
 #will need to change wd for each computer
 setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling")
 getwd()
+
+setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling")
+
 library("DESeq2")
 library("ggplot2")
 
@@ -66,21 +86,29 @@ row.names(countData)=sub("", "isogroup", rownames(countData))
 head(countData)
 
 totalCounts=colSums(countData)
+
 totalCounts
+#NN1 #NN2 #NN3 #UU1 #UU2 #UU3 
+#8555156 #8577700 #8948115 #8570174 #7455015 #6376636
 barplot(totalCounts, col=c("coral", "coral", "coral", "red", "red", "red"), ylab="raw counts")
 #not sure if we should have a different color for each group?
+#I think a diff color for each treatment not necessarily each replicate 
+#raw counts generally uniformly distributed! Good signal for normalization 
 
-# # pH7.5a  pH7.5b  pH7.5c  pH7.6a  pH7.6b  pH7.6c    pH8a    pH8b    pH8c 
-# 789550  918366 1027861  926497  816054  770342  612258  651727  480153 
+
+
 min(totalCounts) #our number is 6376636
 max(totalCounts)  # our number is 8948115
 
+
 treat=c( "NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
+#Treatment = upwelling vs. nonupwelling conditions 
 g=data.frame(treat)
 g
 colData<- g
 
-dds<-DESeqDataSetFromMatrix(countData=countData, colData=colData, design=~treat) #can only test for the main effects of site, pco2, temp
+#creating DESeq object
+dds<-DESeqDataSetFromMatrix(countData=countData, colData=colData, design= ~ treat) #can only test for the main effects of site, pco2, temp
 
 #one step DESeq
 dds<-DESeq(dds)
@@ -90,6 +118,14 @@ dds<-DESeq(dds)
 # mean-dispersion relationship
 # final dispersion estimates
 # fitting model and testing
+
+#Getting Error; think it has to do with design formula 
+
+#Error in checkForExperimentalReplicates(object, modelMatrix) : 
+  
+  #The design matrix has the same number of samples and coefficients to fit,
+#so estimation of dispersion is not possible. Treating samples
+#as replicates was deprecated in v1.20 and no longer supported since v1.22.
 
 head(dds)
 res<- results(dds)
@@ -102,18 +138,18 @@ plotDispEsts(dds, main="Dispersion plot Snails")
 
 ####################pH8 vs pH7.6 pairwise comparisons
 colData$pH76<-factor(colData$treat, levels=c("pH7.6","pH8"))
-##second term is the "control"
 respH76 <- results(dds, contrast=c("treat","pH7.6","pH8"))
 #how many FDR < 10%?
-table(respH76$padj<0.01)
+table(respH76$padj<0.01) 
 # 0.1=486
 # 0.05=381
 # 0.01=242
 summary(respH76)
 
-nrow(respH76[respH76$padj<0.05 & !is.na(respH76$padj),])  # Num significantly differentially expressed genes excluding the no/low count genes   #228
+nrow(respH76[respH76$padj<0.05 & !is.na(respH76$padj),])   # Num significantly differentially expressed genes excluding the no/low count genes   #228
 
-dev.off()
+#dev.off()
+
 plotMA(respH76, main="pH8 vs pH7.6")
 plotMA(respH76, main="pH8 vs pH7.6", ylim=c(-2,2))
 
@@ -125,7 +161,8 @@ nrow(respH76[respH76$padj<0.1 & respH76$log2FoldChange < 0 & !is.na(respH76$padj
 #UP in 7.6 66
 #DOWN in 7.6 420
 
-write.table(respH76, file="7.6_2016.txt", quote=F, sep="\t")
+
+write.table(respH76, file="7.6_2016.txt", quote=F, sep="\t") #include in paper
 
 cd <- read.table("7.6_2016.txt")
 head(cd)
