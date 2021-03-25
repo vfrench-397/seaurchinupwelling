@@ -17,7 +17,8 @@ countData <- read.table("geneCounts_02122019.txt")
 View(countData)
 head(countData)
 length(countData[,1])
-#our length is 30284
+#our length is 30284 - this is the number of genes we have represented
+#here we are renaming our data and adding isogroup to each sample to make data look better
 names(countData)=c("NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
 row.names(countData)=sub("", "isogroup", rownames(countData))
 head(countData)
@@ -54,23 +55,28 @@ rl=vst(dds)
 e=ExpressionSet(assay(rl), AnnotatedDataFrame(as.data.frame(colData(rl))))
 arrayQualityMetrics(e,outdir=v,intgroup=c("treat"),force=T)
 
-##dev.off() 
+##dev.off() for windows only
 #double-click index.html
 
 #####you only ever need to run the above code once. Outliers are decided at the beginning. 
-## I like to close R and restart with packages etc
-##So, please save your script and restart R
-#no outliers detected! 
-  #Looks like outlier is UU3 detected under "Distances between arrays"; remove that whole replication? 
+
+#(can see outlier in index html file in outlier folder)
+#Looks like outlier is UU3 detected under "Distances between arrays"; remove that whole replication? 
 #low or high sequencing depth can create outliers 
 #remove outliers from counts file and matrix of call data; HOW? 
 
+#Yes, I think we should remove UU3 from counts file and colData. Maybe this is how? Double check
+#countData <- subset(countData, select= -UU3)
+#head(countData)
+#colData <- colData[-6,]
+#colData #this is changing the way colData used to look, probably did this wrong
+
+#We will need to rerun previous code after getting rid of UU3 here^^
 
 #will need to change wd for each computer
 setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling")
-getwd()
-
 setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling")
+getwd()
 
 library("DESeq2")
 library("ggplot2")
@@ -90,11 +96,10 @@ totalCounts=colSums(countData)
 totalCounts
 #NN1 #NN2 #NN3 #UU1 #UU2 #UU3 
 #8555156 #8577700 #8948115 #8570174 #7455015 #6376636
+#our raw counts range from 6mil to 8mil
 barplot(totalCounts, col=c("coral", "coral", "coral", "red", "red", "red"), ylab="raw counts")
-#not sure if we should have a different color for each group?
-#I think a diff color for each treatment not necessarily each replicate 
+#diff color for each treatment not necessarily each replicate 
 #raw counts generally uniformly distributed! Good signal for normalization 
-
 
 
 min(totalCounts) #our number is 6376636
@@ -108,7 +113,7 @@ g
 colData<- g
 
 #creating DESeq object
-dds<-DESeqDataSetFromMatrix(countData=countData, colData=colData, design= ~ treat) #can only test for the main effects of site, pco2, temp
+dds<-DESeqDataSetFromMatrix(countData=countData, colData=colData, design= ~ treat) 
 
 #one step DESeq
 dds<-DESeq(dds)
@@ -120,6 +125,7 @@ dds<-DESeq(dds)
 # fitting model and testing
 
 #Getting Error; think it has to do with design formula 
+#I am also getting error here 
 
 #Error in checkForExperimentalReplicates(object, modelMatrix) : 
   
@@ -130,7 +136,9 @@ dds<-DESeq(dds)
 head(dds)
 res<- results(dds)
 
-#***********this is where I stopped and everything after this still has old data from the deseq lab*************************
+
+
+#everything after this still has old data from deseq lab
 
 
 #Look at dispersions plot
