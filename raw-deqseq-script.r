@@ -18,9 +18,9 @@ View(countData)
 head(countData)
 length(countData[,1])
 #our length is 30284 - this is the number of genes we have represented
-#here we are renaming our data and adding isogroup to each sample to make data look better
+#here we are renaming our data by treatment: N=nonupwelling and U=upwelling conditions
 names(countData)=c("NN", "NN", "NN", "UU", "UU", "UU")
-#row.names(countData)=sub("", "isogroup", rownames(countData))
+#row.names(countData)=sub("", "isogroup", rownames(countData)) this is not necessary for our data 
 head(countData)
 
 
@@ -34,7 +34,7 @@ v= setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling/outlier")
 
 # # # #look for outliers
 treat=c("NN", "NN", "NN", "UU", "UU", "UU")
-#Why not NU and UN treatments in count data?
+#Why not NU and UN treatments in count data? 
 
 #Creating coldata; data frame associating sample with treatment
 g=data.frame(treat)
@@ -55,23 +55,14 @@ rl=vst(dds)
 e=ExpressionSet(assay(rl), AnnotatedDataFrame(as.data.frame(colData(rl))))
 arrayQualityMetrics(e,outdir=v,intgroup=c("treat"),force=T)
 
-##dev.off() for windows only
-#double-click index.html
 
 #####you only ever need to run the above code once. Outliers are decided at the beginning. 
 
 #(can see outlier in index html file in outlier folder)
-#Looks like outlier is UU3 detected under "Distances between arrays"; remove that whole replication? 
+#We have an outlier in UU3 detected under "Distances between arrays." We will be keeping this outlier in our data because it was only offensive in distance between arrays, but not in boxplots or MA plots.
+#Based on the barplot of our total counts data below, we see even distribution between our treatments, which is another reason we are keeping outlier.
 #low or high sequencing depth can create outliers 
-#remove outliers from counts file and matrix of call data; HOW? 
 
-#Yes, I think we should remove UU3 from counts file and colData. Maybe this is how? Double check
-#countData <- subset(countData, select= -UU3)
-#head(countData)
-#colData <- colData[-6,]
-#colData #this is changing the way colData used to look, probably did this wrong
-
-#We will need to rerun previous code after getting rid of UU3 here^^
 
 #will need to change wd for each computer
 setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling")
@@ -88,7 +79,7 @@ length(countData[,1])
 #our length is 30284
 
 names(countData)=c( "NN", "NN", "NN", "UU", "UU", "UU")
-row.names(countData)=sub("", "isogroup", rownames(countData))
+#row.names(countData)=sub("", "isogroup", rownames(countData))
 head(countData)
 
 totalCounts=colSums(countData)
@@ -98,8 +89,7 @@ totalCounts
 #8555156 #8577700 #8948115 #8570174 #7455015 #6376636
 #our raw counts range from 6mil to 8mil
 barplot(totalCounts, col=c("coral", "coral", "coral", "red", "red", "red"), ylab="raw counts")
-#diff color for each treatment not necessarily each replicate 
-#raw counts generally uniformly distributed! Good signal for normalization 
+#raw counts generally uniformly distributed for each treatment! Good signal for normalization 
 
 
 min(totalCounts) #our number is 6376636
@@ -111,8 +101,9 @@ treat=c( "NN", "NN", "NN", "UU", "UU", "UU")
 g=data.frame(treat)
 g
 colData<- g
+#creating colData here again like above
 
-#creating DESeq object
+#creating DESeq object, design is treatment group
 dds<-DESeqDataSetFromMatrix(countData=countData, colData=colData, design= ~ treat) 
 
 #one step DESeq
@@ -124,29 +115,21 @@ dds<-DESeq(dds)
 # final dispersion estimates
 # fitting model and testing
 
-#Getting Error; think it has to do with design formula 
-#I am also getting error here 
 
-#Error in checkForExperimentalReplicates(object, modelMatrix) : 
-  
-  #The design matrix has the same number of samples and coefficients to fit,
-#so estimation of dispersion is not possible. Treating samples
-#as replicates was deprecated in v1.20 and no longer supported since v1.22.
-
-head(dds)
+head(dds) #this is deseq object
 res<- results(dds)
 res
 
 
-#everything after this still has old data from deseq lab
-
-
 #Look at dispersions plot
-plotDispEsts(dds, main="Dispersion plot Snails")
+plotDispEsts(dds, main="Dispersion plot")
 #this should look like hockey stick, this is visual representation of deseq
+#Our data follows the hockey stick shape/dispersion fits well to curve
 
 ####################upwelling vs nonupwelling pairwise comparisons
+#here we are doing analyses to look at differentially expressed genes among our two treatments; upwelling vs. nonupwelling
 colData$UU<-factor(colData$treat, levels=c("UU","NN"))
+#order of levels matters: the second term (nonupwelling) is our control; upwelling will be compared to nonupwelling
 resUU <- results(dds, contrast=c("treat","UU","NN"))
 #how many FDR < 10%?
 table(resUU$padj<0.001) 
@@ -155,18 +138,19 @@ table(resUU$padj<0.001)
 # 0.01=1344
 # 0.001 = 715
 summary(resUU)
+#doing summary allows us to see that there are genes removed in pairwise analysis due to low counts (23%)
+#also see 5.4% of genes were downregulated which means downregulated in UU relative to NN
+#7.2% of genes were upregulated in UU relative to NN
 
-nrow(resUU[resUU$padj<0.05 & !is.na(resUU$padj),])   # Num significantly differentially expressed genes excluding the no/low count genes   #228
-#2289
+nrow(resUU[resUU$padj<0.05 & !is.na(resUU$padj),])   # Num significantly differentially expressed genes excluding the no/low count genes
+#2289, this is the same result we get above for 0.05. This is another way to look at differentially expressed genes
 
-#dev.off()
 
 plotMA(resUU, main="NN vs UU") #leave at ylim 4,-4
-#plotMA(resUU, main="NN vs UU", ylim=c(-6,6))
-#maybe mess around with ylim, first plot looks ok
 
 results <- as.data.frame(resUU)
 head(results)
+#shows us summary of results
 
 nrow(resUU[resUU$padj<0.1 & resUU$log2FoldChange > 0 & !is.na(resUU$padj),])
 #this is looking at upregulated bc logfold > 0
@@ -183,14 +167,13 @@ head(cd)
 
 ##make the GO table for MWU
 head(cd)
-
-#*********this is where we stopped in class****************
-
 library(dplyr)
 cd
 go_input_UU = cd %>%
   tibble::rownames_to_column(var = "iso") %>%
   mutate(mutated_p = -log(pvalue)) %>%
+  #making a ranked p-value with directionality here
+  #if pos log fold change means upregulated, if neg means down regulated
   mutate(mutated_p_updown = ifelse(log2FoldChange < 0, mutated_p*-1, mutated_p*1)) %>%
   na.omit() %>%
   select(iso, mutated_p_updown)
@@ -198,51 +181,10 @@ head(go_input_UU)
 colnames(go_input_UU) <- c("gene", "pval")
 head(go_input_UU)
 write.csv(go_input_UU, file="UU_GO.csv", quote=F, row.names=FALSE)
+#this csv is in the outlier folder
 
+#************this is where we stopped, all old data after this point*************************
 
-
-#########################################################################################################
-###Pco2 pH8 vs pH7.5
-summary(res)
-resph75 <- results(dds, contrast=c("treat","pH7.5", "pH8"))
-table(resph75$padj<0.05)
-# 0.1=118
-# 0.05=72
-# 0.01=43
-summary(resph75)
-
-plotMA(resph75, main="pH8 vs pH7.5")
-plotMA(resph75, main="pH8 vs pH7.5", ylim=c(-2,2))
-
-results <- as.data.frame(resph75)
-head(results)
-
-nrow(resph75[resph75$padj<0.1 & resph75$log2FoldChange > 0 & !is.na(resph75$padj),])
-nrow(resph75[resph75$padj<0.1 & resph75$log2FoldChange < 0 & !is.na(resph75$padj),])
-#UP in 7.5 38
-#DOWN in 7.5 80
-
-write.table(resph75, file="7.5_2016.txt", quote=F, sep="\t")
-
-cd2 <- read.table("7.5_2016.txt")
-head(cd2)
-
-##make the GO table for MWU for 7.5
-head(cd2)
-
-library(dplyr)
-go_input_7.5 = cd2 %>%
-  tibble::rownames_to_column(var = "iso") %>%
-  mutate(mutated_p = -log(pvalue)) %>%
-  mutate(mutated_p_updown = ifelse(log2FoldChange < 0, mutated_p*-1, mutated_p*1)) %>%
-  na.omit() %>%
-  select(iso, mutated_p_updown)
-head(go_input_7.5)
-colnames(go_input_7.5) <- c("gene", "pval")
-head(go_input_7.5)
-write.csv(go_input_7.5, file="7.5_GO.csv", quote=F, row.names=FALSE)
-
-write.table(resph75, file="7.5_2016.txt", quote=F, sep="\t")
 ###############################################################################################
 ##############################################################################
 #--------------get pvals
