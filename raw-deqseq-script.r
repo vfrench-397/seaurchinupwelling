@@ -183,46 +183,50 @@ head(go_input_UU)
 write.csv(go_input_UU, file="UU_GO.csv", quote=F, row.names=FALSE)
 #this csv is in the outlier folder
 
-#************this is where we stopped, all old data after this point*************************
 
 ###############################################################################################
 ##############################################################################
 #--------------get pvals
-val76=cbind(respH76$pvalue, respH76$padj)
-head(val76)
-colnames(val76)=c("pval.76", "padj.76")
-length(val76[,1])
-table(complete.cases(val76))
 
-val75=cbind(resph75$pvalue, resph75$padj)
-head(val75)
-colnames(val75)=c("pval.75", "padj.75")
-length(val75[,1])
-table(complete.cases(val75))
+#here we are binding two columns, the first column is the pval from res comparison of UU to NN and then the p adjusted values
+valUU=cbind(resUU$pvalue, resUU$padj)
+head(valUU)
+#this is pvalues and padjusted values
+colnames(valUU)=c("pval.UU", "padj.UU")
+length(valUU[,1]) #this is the number of genes we are looking at = 30284 (same as above)
+table(complete.cases(valUU))
+#False = NAs
 
 ######-------------make rlogdata and pvals table
+
+#now doing r log transformation, this is important for making heat maps. it is normalization method and is also how we are going to make PCAs 
+#this can take bit of time
+
 rlog=rlogTransformation(dds, blind=TRUE) 
 rld=assay(rlog)
 head(rld)
+#this shows us for each isogroup we have the r log normalized values for each of our samples
 colnames(rld)=paste(colData$treat)
 head(rld)
-length(rld[,1])
+length(rld[,1]) #length should be still same, which it is
 
-rldpvals=cbind(rld,val75, val76)
+#binding rld data and pvalues
+rldpvals=cbind(rld,valUU)
 head(rldpvals)
-dim(rldpvals)
-# [1] 19717    13
+#bound r log normalized data (each column is sample)
+dim(rldpvals) #looking at dimensions [1] 30284     8 , there are more columns here because we added columns of pvalues
 table(complete.cases(rldpvals))
 #FALSE  TRUE 
-#17202  2515 
+#11745  18539 , we still have the same number of NAs (false) here
 
-write.csv(rldpvals, "Crep2016_RLDandPVALS.csv", quote=F)
+write.csv(rldpvals, "RLDandPVALS.csv", quote=F)
+#this is saved in outlier folder - can i move to main folder??
 
 colnames(rld)=paste(colData$treat)
 head(rld)
 
 library(RColorBrewer)
-# Sample distance heatmap
+# making sample distance heatmap
 sampleDists <- as.matrix(dist(t(rld)))
 library(gplots)
 heatmap.2(as.matrix(sampleDists), key=F, trace="none",
@@ -230,24 +234,33 @@ heatmap.2(as.matrix(sampleDists), key=F, trace="none",
           margin=c(10, 10), main="Sample Distance Matrix")
 
 
+#heatmap shows clustering - how similar samples are 
+#these are a good way to visualize overall expression between our samples
+#i think this heatmap looks good, it is showing the clustering of our treatments, which we expect 
+
 
 #################################################################################
 # VENN Diagram to include both up and down regulated genes in common for PC02
+#shows number of differentially expressed genes
 library(VennDiagram)
 
-p76_up=row.names(respH76[respH76$padj<0.1 & !is.na(respH76$padj) & respH76$log2FoldChange>0,])
-length(p76_up) #66
-p76_down=row.names(respH76[respH76$padj<0.1 & !is.na(respH76$padj) & respH76$log2FoldChange<0,])
-length(p76_down) #420
-p75_up=row.names(resph75[resph75$padj<0.1 & !is.na(resph75$padj) & resph75$log2FoldChange>0,])
-length(p75_up) #38
-p75_down=row.names(resph75[resph75$padj<0.1 & !is.na(resph75$padj) & resph75$log2FoldChange<0,])
-length(p75_down) #80
+#getting series of up reg and down reg genes (p adjusted values of 0.1 fairly standard in literature)
+UU_up=row.names(resUU[resUU$padj<0.1 & !is.na(resUU$padj) & resUU$log2FoldChange>0,])
+#using res function and asking what are the row names that meet these requirements: 
+#has to have padj of 0.1, cant be a NA, and because we want upreg gene in this case we need logfold change to be >0.. these are the 3 requirements to be in the up
+length(UU_up) #1735
+UU_down=row.names(resUU[resUU$padj<0.1 & !is.na(resUU$padj) & resUU$log2FoldChange<0,])
+length(UU_down) #1304
 
-p76=row.names(respH76[respH76$padj<0.1 & !is.na(respH76$padj),])
-p75=row.names(resph75[resph75$padj<0.1 & !is.na(resph75$padj),])
 
-#UP
+UU=row.names(resUU[resUU$padj<0.1 & !is.na(resUU$padj),])
+length(UU) #sanity check, should be the sum of up and down gene numbers from above (1735+1304), which it is
+
+
+################################
+#not sure if we need these parts next because they are combining all upregulated groups in 7.6 and 7.5 treatments and then getting rid of repetitive isogroups 
+#since we only have one treatment compared to control (UU) we probably dont need to combine anything????
+#UP 
 pdegs05_up=union(p76_up,p75_up)
 length(pdegs05_up)
 #93
@@ -261,6 +274,11 @@ length(pdegs05_down)
 pdegs05=union(p76,p75)
 length(pdegs05)
 #524
+##################################
+
+
+########this is where i stopped, all data after this is old###########
+
 
 ###do UP, DOWN, ALL
 candidates=list("7.6"=p76, "7.5"=p75)
