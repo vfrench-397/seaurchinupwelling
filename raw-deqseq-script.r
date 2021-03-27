@@ -281,7 +281,7 @@ length(pdegs05)
 
 
 ###do UP, DOWN, ALL
-candidates=list("7.6"=p76, "7.5"=p75)
+candidates=list("7.6"=p76, "7.5"=p75) #I am not sure what to compare here, should we compare UU and NN?
 quartz()
 prettyvenn=venn.diagram(
   x = candidates,
@@ -303,19 +303,21 @@ prettyvenn=venn.diagram(
 grid.draw(prettyvenn)
 
 ###########################heat map of sample distances for pco2
-rldpvals <- read.csv(file="Crep2016_RLDandPVALS.csv", row.names=1)
+rldpvals <- read.csv(file="RLDandPVALS.csv", row.names=1)
 head(rldpvals)
-rld=rldpvals[,1:9]
+rld=rldpvals[,1:6] 
+#making rld which is just columns 1-6 and will cut off pvalues to just leave us with r log normalized isogroups
 head(rld)
+#leaving NN.1, NN.2 instead of just NN etc. not sure if this is ok??????? 
 
 sampleDists <- dist(t(rld))
 sampleDistMatrix <- as.matrix( sampleDists )
-treat=c( "pH7.5", "pH7.5", "pH7.5", "pH7.6", "pH7.6", "pH7.6", "pH8", "pH8",  "pH8")
+treat=c( "upwelling", "upwelling", "upwelling", "non-upwelling", "non-upwelling", "non-upwelling")
 colnames(sampleDistMatrix)=paste(treat)
 rownames(sampleDistMatrix)=paste(treat)
 
 library("pheatmap")
-heat.colors = colorRampPalette(rev(c("blue","yellow","red")),bias=0.3)(100)
+heat.colors = colorRampPalette(rev(c("blue","yellow")),bias=0.3)(100)
 pheatmap(sampleDistMatrix,color = heat.colors,cex=0.9,border_color=NA,cluster_rows=T,cluster_cols=T)
 
 library(vegan)
@@ -323,9 +325,14 @@ library(ggplot2)
 library(ggrepel)
 library(tidyverse)
 
+
+#now we are doing principle components analaysis PCA
+#PCA is looking at distance between 2 dots
+
 rld_t=t(rld)
 pca <- prcomp(rld_t,center = TRUE, scale. = TRUE)
 head(pca)
+#we are interested in PC1 and PC2 bc these are the two principle components that explain the most variance
 li <- pca$sdev^2 / sum(pca$sdev^2)
 pc1v <- round(li[1] * 100, 1)
 pc2v <- round(li[2] * 100, 1)
