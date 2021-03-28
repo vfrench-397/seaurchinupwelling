@@ -19,8 +19,8 @@ head(countData)
 length(countData[,1])
 #our length is 30284 - this is the number of genes we have represented
 #here we are renaming our data and adding isogroup to each sample to make data look better
-names(countData)=c("NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
-row.names(countData)=sub("", "isogroup", rownames(countData))
+names(countData)=c("NN", "NN", "NN", "UU", "UU", "UU")
+#row.names(countData)=sub("", "isogroup", rownames(countData))
 head(countData)
 
 
@@ -33,7 +33,7 @@ setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling")
 v= setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling/outlier")
 
 # # # #look for outliers
-treat=c("NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
+treat=c("NN", "NN", "NN", "UU", "UU", "UU")
 #Why not NU and UN treatments in count data?
 
 #Creating coldata; data frame associating sample with treatment
@@ -82,18 +82,19 @@ library("DESeq2")
 library("ggplot2")
 
 #read in counts 
-countData <- read.table("geneCounts_02122019.txt")
+countData <- as.matrix(read.table("geneCounts_02122019.txt"))
+class(countData)
 head(countData)
 length(countData[,1])
 #our length is 30284
 
-names(countData)=c( "NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
-row.names(countData)=sub("", "isogroup", rownames(countData))
+names(countData)=c( "NN", "NN", "NN", "UU", "UU", "UU")
+#row.names(countData)=sub("", "isogroup", rownames(countData))
 head(countData)
 
 totalCounts=colSums(countData)
 
-totalCounts
+totalCounts #How many reads associated with an isogroup for each treatment 
 #NN1 #NN2 #NN3 #UU1 #UU2 #UU3 
 #8555156 #8577700 #8948115 #8570174 #7455015 #6376636
 #our raw counts range from 6mil to 8mil
@@ -106,11 +107,12 @@ min(totalCounts) #our number is 6376636
 max(totalCounts)  # our number is 8948115
 
 
-treat=c( "NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
+treat=as.factor(c( "NN", "NN", "NN", "UU", "UU", "UU"))
 #Treatment = upwelling vs. nonupwelling conditions 
 g=data.frame(treat)
 g
 colData<- g
+str(colData)
 
 #creating DESeq object
 dds<-DESeqDataSetFromMatrix(countData=countData, colData=colData, design= ~ treat) 
@@ -124,18 +126,8 @@ dds<-DESeq(dds)
 # final dispersion estimates
 # fitting model and testing
 
-#Getting Error; think it has to do with design formula 
-#I am also getting error here 
-
-#Error in checkForExperimentalReplicates(object, modelMatrix) : 
-  
-  #The design matrix has the same number of samples and coefficients to fit,
-#so estimation of dispersion is not possible. Treating samples
-#as replicates was deprecated in v1.20 and no longer supported since v1.22.
-
 head(dds)
-res<- results(dds)
-
+res<- results(dds) #extracting results table from DESeq analysis 
 
 
 #everything after this still has old data from deseq lab
