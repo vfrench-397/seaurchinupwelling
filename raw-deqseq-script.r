@@ -277,8 +277,6 @@ length(pdegs05)
 ##################################
 
 
-########this is where i stopped, all data after this is old###########
-
 
 ###do UP, DOWN, ALL
 candidates=list("7.6"=p76, "7.5"=p75) #I am not sure what to compare here, should we compare UU and NN?
@@ -328,6 +326,8 @@ library(tidyverse)
 
 #now we are doing principle components analaysis PCA
 #PCA is looking at distance between 2 dots
+
+########this is where i stopped, all data after this is old###########
 
 rld_t=t(rld)
 pca <- prcomp(rld_t,center = TRUE, scale. = TRUE)
