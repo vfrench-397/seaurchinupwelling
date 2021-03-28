@@ -18,9 +18,11 @@ View(countData)
 head(countData)
 length(countData[,1])
 #our length is 30284 - this is the number of genes we have represented
-#here we are renaming our data and adding isogroup to each sample to make data look better
+
+#here we are renaming our data by treatment: N=nonupwelling and U=upwelling conditions
 names(countData)=c("NN", "NN", "NN", "UU", "UU", "UU")
-#row.names(countData)=sub("", "isogroup", rownames(countData))
+#row.names(countData)=sub("", "isogroup", rownames(countData)) this is not necessary for our data 
+
 head(countData)
 
 
@@ -34,7 +36,7 @@ v= setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling/outlier")
 
 # # # #look for outliers
 treat=c("NN", "NN", "NN", "UU", "UU", "UU")
-#Why not NU and UN treatments in count data?
+
 
 #Creating coldata; data frame associating sample with treatment
 g=data.frame(treat)
@@ -55,23 +57,14 @@ rl=vst(dds)
 e=ExpressionSet(assay(rl), AnnotatedDataFrame(as.data.frame(colData(rl))))
 arrayQualityMetrics(e,outdir=v,intgroup=c("treat"),force=T)
 
-##dev.off() for windows only
-#double-click index.html
 
 #####you only ever need to run the above code once. Outliers are decided at the beginning. 
 
 #(can see outlier in index html file in outlier folder)
-#Looks like outlier is UU3 detected under "Distances between arrays"; remove that whole replication? 
+#We have an outlier in UU3 detected under "Distances between arrays." We will be keeping this outlier in our data because it was only offensive in distance between arrays, but not in boxplots or MA plots.
+#Based on the barplot of our total counts data below, we see even distribution between our treatments, which is another reason we are keeping outlier.
 #low or high sequencing depth can create outliers 
-#remove outliers from counts file and matrix of call data; HOW? 
 
-#Yes, I think we should remove UU3 from counts file and colData. Maybe this is how? Double check
-#countData <- subset(countData, select= -UU3)
-#head(countData)
-#colData <- colData[-6,]
-#colData #this is changing the way colData used to look, probably did this wrong
-
-#We will need to rerun previous code after getting rid of UU3 here^^
 
 #will need to change wd for each computer
 setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling")
@@ -99,22 +92,25 @@ totalCounts #How many reads associated with an isogroup for each treatment
 #8555156 #8577700 #8948115 #8570174 #7455015 #6376636
 #our raw counts range from 6mil to 8mil
 barplot(totalCounts, col=c("coral", "coral", "coral", "red", "red", "red"), ylab="raw counts")
-#diff color for each treatment not necessarily each replicate 
-#raw counts generally uniformly distributed! Good signal for normalization 
+#raw counts generally uniformly distributed for each treatment! Good signal for normalization 
 
 
 min(totalCounts) #our number is 6376636
 max(totalCounts)  # our number is 8948115
 
 
-treat=as.factor(c( "NN", "NN", "NN", "UU", "UU", "UU"))
+
+treat=c( "NN", "NN", "NN", "UU", "UU", "UU")
+
 #Treatment = upwelling vs. nonupwelling conditions 
 g=data.frame(treat)
 g
 colData<- g
-str(colData)
 
-#creating DESeq object
+str(colData)
+#Creating colData again like above 
+
+#creating DESeq object, design is treatment group
 dds<-DESeqDataSetFromMatrix(countData=countData, colData=colData, design= ~ treat) 
 
 #one step DESeq
@@ -126,143 +122,120 @@ dds<-DESeq(dds)
 # final dispersion estimates
 # fitting model and testing
 
-head(dds)
-res<- results(dds) #extracting results table from DESeq analysis 
 
 
-#everything after this still has old data from deseq lab
+head(dds) #this is deseq object
+res<- results(dds)
+res
+
 
 
 #Look at dispersions plot
-plotDispEsts(dds, main="Dispersion plot Snails")
+plotDispEsts(dds, main="Dispersion plot")
+#this should look like hockey stick, this is visual representation of deseq
+#Our data follows the hockey stick shape/dispersion fits well to curve
 
-####################pH8 vs pH7.6 pairwise comparisons
-colData$pH76<-factor(colData$treat, levels=c("pH7.6","pH8"))
-respH76 <- results(dds, contrast=c("treat","pH7.6","pH8"))
+####################upwelling vs nonupwelling pairwise comparisons
+#here we are doing analyses to look at differentially expressed genes among our two treatments; upwelling vs. nonupwelling
+colData$UU<-factor(colData$treat, levels=c("UU","NN"))
+#order of levels matters: the second term (nonupwelling) is our control; upwelling will be compared to nonupwelling
+resUU <- results(dds, contrast=c("treat","UU","NN"))
 #how many FDR < 10%?
-table(respH76$padj<0.01) 
-# 0.1=486
-# 0.05=381
-# 0.01=242
-summary(respH76)
+table(resUU$padj<0.001) 
+# 0.1=3039 - not valuable
+# 0.05=2289
+# 0.01=1344
+# 0.001 = 715
+summary(resUU)
+#doing summary allows us to see that there are genes removed in pairwise analysis due to low counts (23%)
+#also see 5.4% of genes were downregulated which means downregulated in UU relative to NN
+#7.2% of genes were upregulated in UU relative to NN
 
-nrow(respH76[respH76$padj<0.05 & !is.na(respH76$padj),])   # Num significantly differentially expressed genes excluding the no/low count genes   #228
+nrow(resUU[resUU$padj<0.05 & !is.na(resUU$padj),])   # Num significantly differentially expressed genes excluding the no/low count genes
+#2289, this is the same result we get above for 0.05. This is another way to look at differentially expressed genes
 
-#dev.off()
 
-plotMA(respH76, main="pH8 vs pH7.6")
-plotMA(respH76, main="pH8 vs pH7.6", ylim=c(-2,2))
+plotMA(resUU, main="NN vs UU") #leave at ylim 4,-4
 
-results <- as.data.frame(respH76)
+results <- as.data.frame(resUU)
 head(results)
+#shows us summary of results
 
-nrow(respH76[respH76$padj<0.1 & respH76$log2FoldChange > 0 & !is.na(respH76$padj),])
-nrow(respH76[respH76$padj<0.1 & respH76$log2FoldChange < 0 & !is.na(respH76$padj),])
-#UP in 7.6 66
-#DOWN in 7.6 420
+nrow(resUU[resUU$padj<0.1 & resUU$log2FoldChange > 0 & !is.na(resUU$padj),])
+#this is looking at upregulated bc logfold > 0
+nrow(resUU[resUU$padj<0.1 & resUU$log2FoldChange < 0 & !is.na(resUU$padj),])
+#UP in UU is 1735
+#DOWN in UU is 1304
 
 
-write.table(respH76, file="7.6_2016.txt", quote=F, sep="\t") #include in paper
+write.table(resUU, file="UU_DEG.txt", quote=F, sep="\t") #include in paper
+#this is results summary from above in .txt format and is saved in the outlier folder 
 
-cd <- read.table("7.6_2016.txt")
+cd <- read.table("UU_DEG.txt")
 head(cd)
 
 ##make the GO table for MWU
 head(cd)
-
 library(dplyr)
 cd
-go_input_7.6 = cd %>%
+go_input_UU = cd %>%
   tibble::rownames_to_column(var = "iso") %>%
   mutate(mutated_p = -log(pvalue)) %>%
+  #making a ranked p-value with directionality here
+  #if pos log fold change means upregulated, if neg means down regulated
   mutate(mutated_p_updown = ifelse(log2FoldChange < 0, mutated_p*-1, mutated_p*1)) %>%
   na.omit() %>%
   select(iso, mutated_p_updown)
-head(go_input_7.6)
-colnames(go_input_7.6) <- c("gene", "pval")
-head(go_input_7.6)
-write.csv(go_input_7.6, file="7.6_GO.csv", quote=F, row.names=FALSE)
+head(go_input_UU)
+colnames(go_input_UU) <- c("gene", "pval")
+head(go_input_UU)
+write.csv(go_input_UU, file="UU_GO.csv", quote=F, row.names=FALSE)
+#this csv is in the outlier folder
 
-#########################################################################################################
-###Pco2 pH8 vs pH7.5
-summary(res)
-resph75 <- results(dds, contrast=c("treat","pH7.5", "pH8"))
-table(resph75$padj<0.05)
-# 0.1=118
-# 0.05=72
-# 0.01=43
-summary(resph75)
 
-plotMA(resph75, main="pH8 vs pH7.5")
-plotMA(resph75, main="pH8 vs pH7.5", ylim=c(-2,2))
-
-results <- as.data.frame(resph75)
-head(results)
-
-nrow(resph75[resph75$padj<0.1 & resph75$log2FoldChange > 0 & !is.na(resph75$padj),])
-nrow(resph75[resph75$padj<0.1 & resph75$log2FoldChange < 0 & !is.na(resph75$padj),])
-#UP in 7.5 38
-#DOWN in 7.5 80
-
-write.table(resph75, file="7.5_2016.txt", quote=F, sep="\t")
-
-cd2 <- read.table("7.5_2016.txt")
-head(cd2)
-
-##make the GO table for MWU for 7.5
-head(cd2)
-
-library(dplyr)
-go_input_7.5 = cd2 %>%
-  tibble::rownames_to_column(var = "iso") %>%
-  mutate(mutated_p = -log(pvalue)) %>%
-  mutate(mutated_p_updown = ifelse(log2FoldChange < 0, mutated_p*-1, mutated_p*1)) %>%
-  na.omit() %>%
-  select(iso, mutated_p_updown)
-head(go_input_7.5)
-colnames(go_input_7.5) <- c("gene", "pval")
-head(go_input_7.5)
-write.csv(go_input_7.5, file="7.5_GO.csv", quote=F, row.names=FALSE)
-
-write.table(resph75, file="7.5_2016.txt", quote=F, sep="\t")
 ###############################################################################################
 ##############################################################################
 #--------------get pvals
-val76=cbind(respH76$pvalue, respH76$padj)
-head(val76)
-colnames(val76)=c("pval.76", "padj.76")
-length(val76[,1])
-table(complete.cases(val76))
 
-val75=cbind(resph75$pvalue, resph75$padj)
-head(val75)
-colnames(val75)=c("pval.75", "padj.75")
-length(val75[,1])
-table(complete.cases(val75))
+#here we are binding two columns, the first column is the pval from res comparison of UU to NN and then the p adjusted values
+valUU=cbind(resUU$pvalue, resUU$padj)
+head(valUU)
+#this is pvalues and padjusted values
+colnames(valUU)=c("pval.UU", "padj.UU")
+length(valUU[,1]) #this is the number of genes we are looking at = 30284 (same as above)
+table(complete.cases(valUU))
+#False = NAs
 
 ######-------------make rlogdata and pvals table
+
+#now doing r log transformation, this is important for making heat maps. it is normalization method and is also how we are going to make PCAs 
+#this can take bit of time
+
 rlog=rlogTransformation(dds, blind=TRUE) 
 rld=assay(rlog)
 head(rld)
+#this shows us for each isogroup we have the r log normalized values for each of our samples
 colnames(rld)=paste(colData$treat)
 head(rld)
-length(rld[,1])
+length(rld[,1]) #length should be still same, which it is
 
-rldpvals=cbind(rld,val75, val76)
+#binding rld data and pvalues
+rldpvals=cbind(rld,valUU)
 head(rldpvals)
-dim(rldpvals)
-# [1] 19717    13
+#bound r log normalized data (each column is sample)
+dim(rldpvals) #looking at dimensions [1] 30284     8 , there are more columns here because we added columns of pvalues
 table(complete.cases(rldpvals))
 #FALSE  TRUE 
-#17202  2515 
+#11745  18539 , we still have the same number of NAs (false) here
 
-write.csv(rldpvals, "Crep2016_RLDandPVALS.csv", quote=F)
+write.csv(rldpvals, "RLDandPVALS.csv", quote=F)
+#this is saved in outlier folder - can i move to main folder??
 
 colnames(rld)=paste(colData$treat)
 head(rld)
 
 library(RColorBrewer)
-# Sample distance heatmap
+# making sample distance heatmap
 sampleDists <- as.matrix(dist(t(rld)))
 library(gplots)
 heatmap.2(as.matrix(sampleDists), key=F, trace="none",
@@ -270,24 +243,33 @@ heatmap.2(as.matrix(sampleDists), key=F, trace="none",
           margin=c(10, 10), main="Sample Distance Matrix")
 
 
+#heatmap shows clustering - how similar samples are 
+#these are a good way to visualize overall expression between our samples
+#i think this heatmap looks good, it is showing the clustering of our treatments, which we expect 
+
 
 #################################################################################
 # VENN Diagram to include both up and down regulated genes in common for PC02
+#shows number of differentially expressed genes
 library(VennDiagram)
 
-p76_up=row.names(respH76[respH76$padj<0.1 & !is.na(respH76$padj) & respH76$log2FoldChange>0,])
-length(p76_up) #66
-p76_down=row.names(respH76[respH76$padj<0.1 & !is.na(respH76$padj) & respH76$log2FoldChange<0,])
-length(p76_down) #420
-p75_up=row.names(resph75[resph75$padj<0.1 & !is.na(resph75$padj) & resph75$log2FoldChange>0,])
-length(p75_up) #38
-p75_down=row.names(resph75[resph75$padj<0.1 & !is.na(resph75$padj) & resph75$log2FoldChange<0,])
-length(p75_down) #80
+#getting series of up reg and down reg genes (p adjusted values of 0.1 fairly standard in literature)
+UU_up=row.names(resUU[resUU$padj<0.1 & !is.na(resUU$padj) & resUU$log2FoldChange>0,])
+#using res function and asking what are the row names that meet these requirements: 
+#has to have padj of 0.1, cant be a NA, and because we want upreg gene in this case we need logfold change to be >0.. these are the 3 requirements to be in the up
+length(UU_up) #1735
+UU_down=row.names(resUU[resUU$padj<0.1 & !is.na(resUU$padj) & resUU$log2FoldChange<0,])
+length(UU_down) #1304
 
-p76=row.names(respH76[respH76$padj<0.1 & !is.na(respH76$padj),])
-p75=row.names(resph75[resph75$padj<0.1 & !is.na(resph75$padj),])
 
-#UP
+UU=row.names(resUU[resUU$padj<0.1 & !is.na(resUU$padj),])
+length(UU) #sanity check, should be the sum of up and down gene numbers from above (1735+1304), which it is
+
+
+################################
+#not sure if we need these parts next because they are combining all upregulated groups in 7.6 and 7.5 treatments and then getting rid of repetitive isogroups 
+#since we only have one treatment compared to control (UU) we probably dont need to combine anything????
+#UP 
 pdegs05_up=union(p76_up,p75_up)
 length(pdegs05_up)
 #93
@@ -301,9 +283,12 @@ length(pdegs05_down)
 pdegs05=union(p76,p75)
 length(pdegs05)
 #524
+##################################
+
+
 
 ###do UP, DOWN, ALL
-candidates=list("7.6"=p76, "7.5"=p75)
+candidates=list("7.6"=p76, "7.5"=p75) #I am not sure what to compare here, should we compare UU and NN?
 quartz()
 prettyvenn=venn.diagram(
   x = candidates,
@@ -325,19 +310,21 @@ prettyvenn=venn.diagram(
 grid.draw(prettyvenn)
 
 ###########################heat map of sample distances for pco2
-rldpvals <- read.csv(file="Crep2016_RLDandPVALS.csv", row.names=1)
+rldpvals <- read.csv(file="RLDandPVALS.csv", row.names=1)
 head(rldpvals)
-rld=rldpvals[,1:9]
+rld=rldpvals[,1:6] 
+#making rld which is just columns 1-6 and will cut off pvalues to just leave us with r log normalized isogroups
 head(rld)
+#leaving NN.1, NN.2 instead of just NN etc. not sure if this is ok??????? 
 
 sampleDists <- dist(t(rld))
 sampleDistMatrix <- as.matrix( sampleDists )
-treat=c( "pH7.5", "pH7.5", "pH7.5", "pH7.6", "pH7.6", "pH7.6", "pH8", "pH8",  "pH8")
+treat=c( "upwelling", "upwelling", "upwelling", "non-upwelling", "non-upwelling", "non-upwelling")
 colnames(sampleDistMatrix)=paste(treat)
 rownames(sampleDistMatrix)=paste(treat)
 
 library("pheatmap")
-heat.colors = colorRampPalette(rev(c("blue","yellow","red")),bias=0.3)(100)
+heat.colors = colorRampPalette(rev(c("blue","yellow")),bias=0.3)(100)
 pheatmap(sampleDistMatrix,color = heat.colors,cex=0.9,border_color=NA,cluster_rows=T,cluster_cols=T)
 
 library(vegan)
@@ -345,9 +332,16 @@ library(ggplot2)
 library(ggrepel)
 library(tidyverse)
 
+
+#now we are doing principle components analaysis PCA
+#PCA is looking at distance between 2 dots
+
+########this is where i stopped, all data after this is old###########
+
 rld_t=t(rld)
 pca <- prcomp(rld_t,center = TRUE, scale. = TRUE)
 head(pca)
+#we are interested in PC1 and PC2 bc these are the two principle components that explain the most variance
 li <- pca$sdev^2 / sum(pca$sdev^2)
 pc1v <- round(li[1] * 100, 1)
 pc2v <- round(li[2] * 100, 1)

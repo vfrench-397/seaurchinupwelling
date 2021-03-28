@@ -3,7 +3,6 @@ title: "Sea-urchin-Upwelling-HW2"
 output: html_document
 ---
 
-##Introduction##
 
 Title: 
 Authors: 
@@ -12,39 +11,25 @@ Madison Pacaro
 Jamie Poirier 
 
 
+# Introduction 
 
 
-##Version Control## 
 
-R 4.0.2 
-DESeq2 1.28.1
-affycoretools 1.60.1
-arrayQualityMetrics 3.46.0
-genefilter 1.70.0
-Biobase 2.48.0
-
-```{r}
-
-getRversion()
-
-#DESeq
-packageVersion("DESeq2")
-packageVersion("affycoretools")
-packageVersion("arrayQualityMetrics")
-packageVersion("genefilter")
-packageVersion("Biobase")
-
-#GO 
-
-#WGCNA
-
-```
+# Version Control
 
 
-##Data Analysis##
+R version 4.0.3 was used for all analyses. 
+DESeq2 package version 1.30.1
+affycoretools package version 1.62.0
+arrayQualityMetrics package version 3.46.0
+genefilter package version 1.72.1
+Biobase package version 2.50.0
 
-```{r}
-#Loadpackages 
+
+# Data Analysis & Methods
+
+First, we loaded all the required packages for our analyses.
+```{r, warning=FALSE, message=FALSE}
 
 #DESeq 
 library(DESeq2) 
@@ -59,65 +44,68 @@ library(Biobase)
 
 ```
 
-```{r}
-#Setwd
-#setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling")
+We then set our working directory for the project.
+```{r, results='hide'}
+setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling")
 
 ```
 
+Next, we read in our raw count data, and determined the length of the data. 
 ```{r}
-#create countdata variable 
-countData <- read.table(file= "geneCounts_02122019.txt")
-names(countData)=c("NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
-row.names(countData)=sub("", "isogroup", rownames(countData))
+countData <- read.table("geneCounts_02122019.txt")
 head(countData)
 length(countData[,1])
 ```
 
+The length of our data is 30284. This is the number of genes we have represented in our data set.
+
+We then remaned our data by our two treatments: NN = non-upwelling and UU = upwelling conditions.
 ```{r}
-#Outliers
+names(countData)=c("NN", "NN", "NN", "UU", "UU", "UU")
+head(countData)
+```
 
-treat=c("NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
 
-#Creating coldata; data frame associating sample with treatment
+# Outlier Analysis
+
+We then conducted array quality metrics to detect and remove outliers in our data. We first specified a new directory for outlier data and our treatments.
+```{r}
+setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling/outlier")
+v=setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling/outlier")
+treat=c("NN", "NN", "NN", "UU", "UU", "UU")
+```
+
+Here, we are creating colData, which is a data frame associating sample with treatment.
+```{r}
 g=data.frame(treat)
 g
 colData=g
+```
 
-#Calling on DESeq2 to create a model; storing results of analysis of differential expression; asking how our design varies by treatment 
+We now are calling on DESeq2 to create a model for our data, which is storing the results of analysis of differential expression and asking how our design varies by treatment. We then normalized our data.
+```{r}
+
 dds=DESeqDataSetFromMatrix(countData=countData,
                            colData = g,
                            design = ~treat)
-
-#Normalizing Data 
 vsd.ge=assay(vst(dds))
 rl=vst(dds)
+```
 
+Using arrayQualityMetrics, we then identified any outliers in our data. We have an outlier in UU detected under "Distances between arrays." We will be keeping this outlier in our data because it was only offensive in distance between arrays, but not in boxplots or MA plots. Based on the barplot of our total counts data below, we will see even distribution between our treatments, which is another reason we are keeping this outlier.
 
-#Identifying outliers in data
+#show html file here
+
+```{r}
 e=ExpressionSet(assay(rl), AnnotatedDataFrame(as.data.frame(colData(rl))))
 arrayQualityMetrics(e,outdir=v,intgroup=c("treat"),force=T)
 ```
 
 ```{r}
-#Total Counts 
-
-totalCounts
-#NN1 #NN2 #NN3 #UU1 #UU2 #UU3 
-#8555156 #8577700 #8948115 #8570174 #7455015 #6376636
-barplot(totalCounts, col=c("coral", "coral", "coral", "red", "red", "red"), ylab="raw counts")
-#raw counts generally uniformly distributed! Good signal for normalization 
-
-min(totalCounts) #our number is 6376636
-max(totalCounts)  # our number is 8948115
 ```
 
 ```{r}
-#Creating DESeq Object 
-dds<-DESeqDataSetFromMatrix(countData=countData, colData=colData, design= ~ treat)
 
-#one step DESeq
-dds<-DESeq(dds)
 ```
 
 
