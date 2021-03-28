@@ -18,9 +18,11 @@ View(countData)
 head(countData)
 length(countData[,1])
 #our length is 30284 - this is the number of genes we have represented
+
 #here we are renaming our data by treatment: N=nonupwelling and U=upwelling conditions
 names(countData)=c("NN", "NN", "NN", "UU", "UU", "UU")
 #row.names(countData)=sub("", "isogroup", rownames(countData)) this is not necessary for our data 
+
 head(countData)
 
 
@@ -34,7 +36,7 @@ v= setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling/outlier")
 
 # # # #look for outliers
 treat=c("NN", "NN", "NN", "UU", "UU", "UU")
-#Why not NU and UN treatments in count data? 
+
 
 #Creating coldata; data frame associating sample with treatment
 g=data.frame(treat)
@@ -74,7 +76,8 @@ library("ggplot2")
 
 
 #read in counts 
-countData <- read.table("geneCounts_02122019.txt")
+countData <- as.matrix(read.table("geneCounts_02122019.txt"))
+class(countData)
 head(countData)
 length(countData[,1])
 #our length is 30284
@@ -85,7 +88,7 @@ head(countData)
 
 totalCounts=colSums(countData)
 
-totalCounts
+totalCounts #How many reads associated with an isogroup for each treatment 
 #NN1 #NN2 #NN3 #UU1 #UU2 #UU3 
 #8555156 #8577700 #8948115 #8570174 #7455015 #6376636
 #our raw counts range from 6mil to 8mil
@@ -97,12 +100,16 @@ min(totalCounts) #our number is 6376636
 max(totalCounts)  # our number is 8948115
 
 
+
 treat=c( "NN", "NN", "NN", "UU", "UU", "UU")
+
 #Treatment = upwelling vs. nonupwelling conditions 
 g=data.frame(treat)
 g
 colData<- g
-#creating colData here again like above
+
+str(colData)
+#Creating colData again like above 
 
 #creating DESeq object, design is treatment group
 dds<-DESeqDataSetFromMatrix(countData=countData, colData=colData, design= ~ treat) 
@@ -117,9 +124,11 @@ dds<-DESeq(dds)
 # fitting model and testing
 
 
+
 head(dds) #this is deseq object
 res<- results(dds)
 res
+
 
 
 #Look at dispersions plot
