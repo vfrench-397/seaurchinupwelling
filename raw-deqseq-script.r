@@ -72,6 +72,7 @@ getwd()
 library("DESeq2")
 library("ggplot2")
 
+
 #read in counts 
 countData <- read.table("geneCounts_02122019.txt")
 head(countData)

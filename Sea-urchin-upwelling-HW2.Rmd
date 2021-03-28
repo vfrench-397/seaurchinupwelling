@@ -92,7 +92,7 @@ vsd.ge=assay(vst(dds))
 rl=vst(dds)
 ```
 
-Using arrayQualityMetrics, we then identified any outliers in our data. We have an outlier in UU detected under "Distances between arrays." We will be keeping this outlier in our data because it was only offensive in distance between arrays, but not in boxplots or MA plots. Based on the barplot of our total counts data below, we will see even distribution between our treatments, which is another reason we are keeping this outlier.
+Using arrayQualityMetrics, we then identified any outliers in our data. An outlier in UU was detected under "Distances between arrays." We will be keeping this outlier in our data because it was only offensive in distance between arrays, but not in boxplots or MA plots. Based on the barplot of our total counts data below, we will see even distribution between our treatments, which is another reason we are keeping this outlier.
 
 #show html file here
 
@@ -101,12 +101,111 @@ e=ExpressionSet(assay(rl), AnnotatedDataFrame(as.data.frame(colData(rl))))
 arrayQualityMetrics(e,outdir=v,intgroup=c("treat"),force=T)
 ```
 
+We then changed directories to our original directory.
 ```{r}
+setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling")
 ```
 
+We then analyzed our count data by looking at the total number of counts. From this output, we can see that our raw counts range from approximately 6 million to 8 million reads across treatments. We then plotted a bar plot of the counts which shows that our raw counts are generally uniformly distributed for each treatment, which is a good signal for normalization. 
 ```{r}
+totalCounts=colSums(countData)
+
+totalCounts
+barplot(totalCounts, col=c("coral", "coral", "coral", "red", "red", "red"), ylab="raw counts")
+
+min(totalCounts) 
+max(totalCounts)  
+```
+
+We then created the DESeq object and saved the results of the model.
+```{r}
+dds<-DESeq(dds)
+
+head(dds) 
+res<- results(dds)
+res
+```
+
+Then, to look at the dispersion of our data, we plotted a visual representation of the DESeq object. This plot follows the general shape of a hockey stick, which shows that the dispersion fits well to the curve.
+```{r}
+plotDispEsts(dds, main="Dispersion plot")
 
 ```
+
+
+# Treatment Comparisons
+
+Here, we are performing analyses to examine differentially expressed genes among our two treatment groups: upwelling vs. non-upwelling. In the first analysis, we specified non-upwelling (NN) as our control in the levels option and our results will therefore be in terms of upwelling compared to non-upwelling. *******Needs more explanation for pvals
+```{r}
+colData$UU<-factor(colData$treat, levels=c("UU","NN"))
+resUU <- results(dds, contrast=c("treat","UU","NN"))
+#how many FDR < 10%?
+table(resUU$padj<0.001) 
+# 0.1=3039 - not valuable
+# 0.05=2289
+# 0.01=1344
+# 0.001 = 715
+
+```
+
+We then summarized resUU. This allows us to see that there are genes removed in pairwise analysis due to low counts (23%) and we also see 5.4% of genes were downregulated in UU relative to NN. In addition, 7.2% of genes were upregulated in UU relative to NN.
+```{r}
+summary(resUU)
+```
+
+Here we are using another method to look at differentially expressed genes, as we did above. We see the number of significantly differentially expressed genes excluding low count genes.
+```{r}
+nrow(resUU[resUU$padj<0.05 & !is.na(resUU$padj),])   
+```
+
+We then plotted a visual representation of differentially expressed genes and this shows........ *add explanation
+```{r}
+plotMA(resUU, main="NN vs UU") 
+```
+
+We then summarized our results.
+```{r}
+results <- as.data.frame(resUU)
+head(results)
+
+```
+
+Then, we examined upregulated and downregulated genes separately. Upregulated genes are genes with a positive logfold change and downregulated genes are genes with a negative logfold change.
+```{r}
+nrow(resUU[resUU$padj<0.1 & resUU$log2FoldChange > 0 & !is.na(resUU$padj),])
+nrow(resUU[resUU$padj<0.1 & resUU$log2FoldChange < 0 & !is.na(resUU$padj),])
+#UP in UU is 1735
+#DOWN in UU is 1304
+```
+
+We then created a table to summarize our results from above. *show table??? either do head cd or cd?
+```{r}
+write.table(resUU, file="UU_DEG.txt", quote=F, sep="\t") 
+
+cd <- read.table("UU_DEG.txt")
+head(cd)
+
+```
+
+We then created a GO table with ranked p-values with directionality for each gene. We then saved the table as a CSV for future GO analysis.
+```{r}
+library(dplyr)
+cd
+go_input_UU = cd %>%
+  tibble::rownames_to_column(var = "iso") %>%
+  mutate(mutated_p = -log(pvalue)) %>%
+  mutate(mutated_p_updown = ifelse(log2FoldChange < 0, mutated_p*-1, mutated_p*1)) %>%
+  na.omit() %>%
+  select(iso, mutated_p_updown)
+
+head(go_input_UU)
+colnames(go_input_UU) <- c("gene", "pval")
+head(go_input_UU)
+write.csv(go_input_UU, file="UU_GO.csv", quote=F, row.names=FALSE)
+#in outlier folder
+```
+
+
 
 
 ```{r setup, include=FALSE}
