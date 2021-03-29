@@ -281,7 +281,6 @@ head(rldpvals)
 rld=rldpvals[,1:6] 
 #making rld which is just columns 1-6 and will cut off pvalues to just leave us with r log normalized isogroups
 head(rld)
-#leaving NN.1, NN.2 instead of just NN etc. not sure if this is ok??????? 
 
 sampleDists <- dist(t(rld))
 sampleDistMatrix <- as.matrix( sampleDists )
@@ -390,7 +389,6 @@ anno_colors <- list(cond = Var1)
 
 pheatmap(as.matrix(explc),annotation_col=ann,annotation_colors=anno_colors,cex=.85,color=col0,border_color=NA,clustering_distance_rows="correlation",clustering_distance_cols="correlation", show_rownames=T)
 ```
-
 
 
 ```{r setup, include=FALSE}
