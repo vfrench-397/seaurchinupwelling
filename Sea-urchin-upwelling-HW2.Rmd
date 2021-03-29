@@ -24,6 +24,14 @@ affycoretools package version 1.62.0
 arrayQualityMetrics package version 3.46.0
 genefilter package version 1.72.1
 Biobase package version 2.50.0
+dplyr package version 1.0.5
+RColorBrewer package version 1.1-2
+gplots package version 3.1.1
+vegan package version 2.5-7
+ggplot 2 package version 3.3.3
+ggrepel package version 0.9.1
+tidyverse package version 1.3.0
+pheatmap package version 1.0.12
 
 
 # Data Analysis & Methods
@@ -37,12 +45,33 @@ library(affycoretools)
 library(arrayQualityMetrics)
 library(genefilter)
 library(Biobase)
+library(dplyr)
+library(RColorBrewer)
+library(gplots)
+library(vegan)
+library(ggplot2)
+library(ggrepel)
+library(tidyverse)
+library(pheatmap)
+
+#library(VennDiagram)
 
 #GO
 
-#WGCNA
 
 ```
+
+```{r}
+package.version("dplyr")
+package.version("RColorBrewer")
+package.version("gplots")
+package.version("vegan")
+package.version("ggplot2")
+package.version("ggrepel")
+package.version("tidyverse")
+package.version("pheatmap")
+```
+
 
 We then set our working directory for the project.
 ```{r, results='hide'}
@@ -94,7 +123,7 @@ rl=vst(dds)
 
 Using arrayQualityMetrics, we then identified any outliers in our data. An outlier in UU was detected under "Distances between arrays." We will be keeping this outlier in our data because it was only offensive in distance between arrays, but not in boxplots or MA plots. Based on the barplot of our total counts data below, we will see even distribution between our treatments, which is another reason we are keeping this outlier.
 
-#show html file here
+#show html file here #link? #https://scc-ondemand1.bu.edu/rnode/scc-wi3/26578/files/assignment2/seaurchinupwelling/index.html
 
 ```{r}
 e=ExpressionSet(assay(rl), AnnotatedDataFrame(as.data.frame(colData(rl))))
@@ -189,7 +218,6 @@ head(cd)
 
 We then created a GO table with ranked p-values with directionality for each gene. We then saved the table as a CSV for future GO analysis.
 ```{r}
-library(dplyr)
 cd
 go_input_UU = cd %>%
   tibble::rownames_to_column(var = "iso") %>%
@@ -205,6 +233,163 @@ write.csv(go_input_UU, file="UU_GO.csv", quote=F, row.names=FALSE)
 #in outlier folder
 ```
 
+Getting p-values 
+
+```{r}
+#here we are binding two columns, the first column is the pval from res comparison of UU to NN and then the p adjusted values
+valUU=cbind(resUU$pvalue, resUU$padj)
+head(valUU)
+#this is pvalues and padjusted values
+colnames(valUU)=c("pval.UU", "padj.UU")
+length(valUU[,1]) #this is the number of genes we are looking at = 30284 (same as above)
+table(complete.cases(valUU))
+#False = NAs
+```
+
+Making log fold change and p-value data table 
+
+```{r}
+#now doing r log transformation, this is important for making heat maps. it is normalization method and is also how we are going to make PCAs 
+
+rlog=rlogTransformation(dds, blind=TRUE) 
+rld=assay(rlog)
+head(rld)
+#this shows us for each isogroup, the r log normalized values for each of our samples
+colnames(rld)=paste(colData$treat)
+head(rld)
+length(rld[,1]) #length should be still same, indicating retention of all data
+
+#binding rld data and pvalues; ranking pvalues due to significance for heat map
+rldpvals=cbind(rld,valUU)
+head(rldpvals)
+#bound r log normalized data with p-values
+dim(rldpvals) #looking at dimensions [1] 30284     8 , there are more columns here because we added columns of pvalues
+table(complete.cases(rldpvals))
+#FALSE  TRUE 
+#11745  18539 , we still have the same number of NAs (false) here
+
+write.csv(rldpvals, "RLDandPVALS.csv", quote=F)
+
+
+```
+
+Creating the Sample Distance heatmap 
+
+```{r}
+rldpvals <- read.csv(file="RLDandPVALS.csv", row.names=1)
+head(rldpvals)
+rld=rldpvals[,1:6] 
+#making rld which is just columns 1-6 and will cut off pvalues to just leave us with r log normalized isogroups
+head(rld)
+#leaving NN.1, NN.2 instead of just NN etc. not sure if this is ok??????? 
+
+sampleDists <- dist(t(rld))
+sampleDistMatrix <- as.matrix( sampleDists )
+treat=c( "upwelling", "upwelling", "upwelling", "non-upwelling", "non-upwelling", "non-upwelling")
+colnames(sampleDistMatrix)=paste(treat)
+rownames(sampleDistMatrix)=paste(treat)
+
+#creating a heat map from the sampledistMatrix 
+heat.colors = colorRampPalette(rev(c("navy","beige")),bias=0.3)(100)
+pheatmap(sampleDistMatrix,color = heat.colors,cex=0.9,border_color=NA,cluster_rows=T,cluster_cols=T)
+```
+
+Principle Component Analysis 
+```{r}
+rld_t=t(rld) #transposing data frame 
+
+#Removing columns with zero variance (all log fold change 0 meaning not differentially expressed)
+which(apply(rld_t, 2, var)==0)
+rld_t <- rld_t[ , which(apply(rld_t, 2, var) != 0)]
+
+pca <- prcomp(rld_t,center = TRUE, scale. = TRUE) #up to 6 principle components because n=6 samples 
+head(pca)
+
+#we are interested in PC1 and PC2 bc these are the two principle components that explain the most variance
+#defining amount of variance described by PC1 and PC2 
+
+li <- pca$sdev^2 / sum(pca$sdev^2)
+pc1v <- round(li[1] * 100, 1)
+pc2v <- round(li[2] * 100, 1)
+pca_s <- as.data.frame(pca$x)
+head(pca_s)
+pca_s <- pca_s[,c(1,2)] #pulling out first two PCs
+pca_s$Samples = row.names(pca_s)
+pca_s$treat=colData$treat
+head(pca_s)
+
+cbPalette <- c("darkgoldenrod2",  "darkolivegreen3", "dodgerblue3")
+ggplot(pca_s, aes(PC1, PC2, color = treat, pch = treat)) +
+  geom_point(size=3) +
+  #  geom_text_repel(aes(label=Samples)) +
+  scale_colour_manual(values=cbPalette)+
+  theme_bw() +
+  # geom_density2d(alpha=.5)+
+  geom_polygon(alpha=.2)+
+  xlab(paste0("PC1: ",pc1v,"% variance")) +
+  ylab(paste0("PC2: ",pc2v,"% variance")) 
+head(pca)
+```
+
+Statistical Analysis ###Check this 
+
+```{r}
+#ANOVA analysis testing if distances between samples on PCA are significantly different 
+#treatment (at pvalue 0.003) has a specific impact on gene differential expression 
+adonis(pca$x ~ treat, data = pca_s, method='eu', na.rm = TRUE)
+```
+
+Heatmap for top 100 most significant differently expressed genes
+
+```{r}
+rldpvals <- read.csv(file="RLDandPVALS.csv", row.names=1)
+head(rldpvals)
+rld_site= rldpvals[,1:6]
+head(rld_site)
+gg=read.table("goAnnot_spu.tab",sep="\t", row.names=1)
+head(gg)
+
+nrow(rldpvals[rldpvals$padj.UU<0.01& !is.na(rldpvals$padj.UU),])
+#1344; isogroups extremely differently expressed (p-value <0.01) 
+
+#Ranking p-values to find top 100 most differentially expressed genes 
+topnum= 100 # number of DEGS in heatmap 
+head(rldpvals)
+top100=head(rldpvals[order(rldpvals$padj.UU), ],topnum)
+head(top100)
+length(top100[,1])
+summary(top100)
+
+
+head(top100)
+p.val=0.1 # FDR cutoff
+conds=top100[top100$padj.UU<=p.val & !is.na(top100$padj.UU),] #all top 100 where the p- adjusted value is less than or equal to .1 (significant)
+length(conds[,1])
+
+exp=conds[,1:6] #removing associated p-values from log fold change data
+means=apply(exp,1,mean) # means of rows
+explc=exp-means # subtracting them
+head(explc)
+
+ccol=colorRampPalette(rev(c("red","chocolate1","#FEE090","grey10", "cyan3","cyan")))(100)
+col0=colorRampPalette(rev(c("chocolate1","#FEE090","grey10", "cyan3","cyan")))(100)
+
+pheatmap(explc,cluster_cols=T,scale="row",color=col0, show_rownames = F)
+```
+
+Adding Gene annotation to top 100 heatmap 
+
+```{r}
+ann = data.frame(cond = c('UU', 'UU', 'UU', 'NN', 'NN', 'NN'))
+rownames(ann) <- names(explc)
+
+# Set colors
+Var1        <- c("darkgoldenrod2",  "darkolivegreen3", "black")
+names(Var1) <- c("UU", "NN")
+anno_colors <- list(cond = Var1)
+
+pheatmap(as.matrix(explc),annotation_col=ann,annotation_colors=anno_colors,cex=.85,color=col0,border_color=NA,clustering_distance_rows="correlation",clustering_distance_cols="correlation", show_rownames=T)
+```
 
 
 

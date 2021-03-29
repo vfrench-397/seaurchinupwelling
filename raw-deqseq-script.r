@@ -170,6 +170,7 @@ nrow(resUU[resUU$padj<0.1 & resUU$log2FoldChange < 0 & !is.na(resUU$padj),])
 
 
 write.table(resUU, file="UU_DEG.txt", quote=F, sep="\t") #include in paper
+
 #this is results summary from above in .txt format and is saved in the outlier folder 
 
 cd <- read.table("UU_DEG.txt")
@@ -210,27 +211,26 @@ table(complete.cases(valUU))
 ######-------------make rlogdata and pvals table
 
 #now doing r log transformation, this is important for making heat maps. it is normalization method and is also how we are going to make PCAs 
-#this can take bit of time
 
 rlog=rlogTransformation(dds, blind=TRUE) 
 rld=assay(rlog)
 head(rld)
-#this shows us for each isogroup we have the r log normalized values for each of our samples
+#this shows us for each isogroup, the r log normalized values for each of our samples
 colnames(rld)=paste(colData$treat)
 head(rld)
-length(rld[,1]) #length should be still same, which it is
+length(rld[,1]) #length should be still same, indicating retention of all data
 
-#binding rld data and pvalues
+#binding rld data and pvalues; ranking pvalues due to significance for heat map
 rldpvals=cbind(rld,valUU)
 head(rldpvals)
-#bound r log normalized data (each column is sample)
+#bound r log normalized data with p-values
 dim(rldpvals) #looking at dimensions [1] 30284     8 , there are more columns here because we added columns of pvalues
 table(complete.cases(rldpvals))
 #FALSE  TRUE 
 #11745  18539 , we still have the same number of NAs (false) here
 
 write.csv(rldpvals, "RLDandPVALS.csv", quote=F)
-#this is saved in outlier folder - can i move to main folder??
+
 
 colnames(rld)=paste(colData$treat)
 head(rld)
@@ -254,11 +254,11 @@ heatmap.2(as.matrix(sampleDists), key=F, trace="none",
 #shows number of differentially expressed genes
 library(VennDiagram)
 
-#getting series of up reg and down reg genes (p adjusted values of 0.1 fairly standard in literature)
+#making series of up reg and down reg genes (p adjusted values of 0.1 fairly standard in literature)
 UU_up=row.names(resUU[resUU$padj<0.1 & !is.na(resUU$padj) & resUU$log2FoldChange>0,])
 #using res function and asking what are the row names that meet these requirements: 
 #has to have padj of 0.1, cant be a NA, and because we want upreg gene in this case we need logfold change to be >0.. these are the 3 requirements to be in the up
-length(UU_up) #1735
+length(UU_up) #1735 genes upregulated in UU compared to NN (control)
 UU_down=row.names(resUU[resUU$padj<0.1 & !is.na(resUU$padj) & resUU$log2FoldChange<0,])
 length(UU_down) #1304
 
@@ -289,7 +289,8 @@ length(pdegs05)
 
 
 ###do UP, DOWN, ALL
-candidates=list("7.6"=p76, "7.5"=p75) #I am not sure what to compare here, should we compare UU and NN?
+candidates=list("UP"=UU_up, "DOWN"=UU_down) #I am not sure what to compare here, should we compare UU and NN?
+#I agree, I will reach out to Sarah on slack tomorrow! I can't see any instance where we would need this? 
 quartz()
 prettyvenn=venn.diagram(
   x = candidates,
@@ -324,8 +325,9 @@ treat=c( "upwelling", "upwelling", "upwelling", "non-upwelling", "non-upwelling"
 colnames(sampleDistMatrix)=paste(treat)
 rownames(sampleDistMatrix)=paste(treat)
 
+#creating a heat map from the sampledistMatrix 
 library("pheatmap")
-heat.colors = colorRampPalette(rev(c("blue","yellow")),bias=0.3)(100)
+heat.colors = colorRampPalette(rev(c("navy","beige")),bias=0.3)(100)
 pheatmap(sampleDistMatrix,color = heat.colors,cex=0.9,border_color=NA,cluster_rows=T,cluster_cols=T)
 
 library(vegan)
@@ -337,18 +339,25 @@ library(tidyverse)
 #now we are doing principle components analaysis PCA
 #PCA is looking at distance between 2 dots
 
-########this is where i stopped, all data after this is old###########
 
-rld_t=t(rld)
-pca <- prcomp(rld_t,center = TRUE, scale. = TRUE)
+rld_t=t(rld) #transposing data frame 
+
+#Removing columns with zero variance (all log fold change 0 meaning not differentially expressed)
+which(apply(rld_t, 2, var)==0)
+rld_t <- rld_t[ , which(apply(rld_t, 2, var) != 0)]
+
+pca <- prcomp(rld_t,center = TRUE, scale. = TRUE) #up to 6 principle components because n=6 samples 
 head(pca)
+
 #we are interested in PC1 and PC2 bc these are the two principle components that explain the most variance
+#defining amount of variance described by PC1 and PC2 
+
 li <- pca$sdev^2 / sum(pca$sdev^2)
 pc1v <- round(li[1] * 100, 1)
 pc2v <- round(li[2] * 100, 1)
 pca_s <- as.data.frame(pca$x)
 head(pca_s)
-pca_s <- pca_s[,c(1,2)]
+pca_s <- pca_s[,c(1,2)] #pulling out first two PCs
 pca_s$Samples = row.names(pca_s)
 pca_s$treat=colData$treat
 head(pca_s)
@@ -364,6 +373,8 @@ ggplot(pca_s, aes(PC1, PC2, color = treat, pch = treat)) +
   xlab(paste0("PC1: ",pc1v,"% variance")) +
   ylab(paste0("PC2: ",pc2v,"% variance")) 
 head(pca)
+#ANOVA analysis testing if distances between samples on PCA are significantly different 
+#treatment (at pvalue 0.003) has a specific impact on gene differential expression 
 adonis(pca$x ~ treat, data = pca_s, method='eu', na.rm = TRUE)
 # Df SumsOfSqs MeanSqs F.Model      R2 Pr(>F)   
 # treat      2     40140 20069.9  13.048 0.81306  0.003 **
@@ -372,19 +383,20 @@ adonis(pca$x ~ treat, data = pca_s, method='eu', na.rm = TRUE)
 
 
 ###################################heatmaps for genes NS vs FR
-rldpvals <- read.csv(file="Crep2016_RLDandPVALS.csv", row.names=1)
+rldpvals <- read.csv(file="RLDandPVALS.csv", row.names=1)
 head(rldpvals)
-rld_site= rldpvals[,1:9]
+rld_site= rldpvals[,1:6]
 head(rld_site)
-gg=read.table("Crep454_iso2gene.tab",sep="\t", row.names=1)
+gg=read.table("goAnnot_spu.tab",sep="\t", row.names=1)
 head(gg)
 
-nrow(rldpvals[rldpvals$padj.76<0.01& !is.na(rldpvals$padj.76),])
-#242
+nrow(rldpvals[rldpvals$padj.UU<0.01& !is.na(rldpvals$padj.UU),])
+#1344; isogroups extremely differently expressed (p-value <0.01) 
 
-topnum= 100 # number of DEGS
+#Ranking p-values to find top 100 most differentially expressed genes 
+topnum= 100 # number of DEGS in heatmap 
 head(rldpvals)
-top100=head(rldpvals[order(rldpvals$padj.76), ],topnum)
+top100=head(rldpvals[order(rldpvals$padj.UU), ],topnum)
 head(top100)
 length(top100[,1])
 summary(top100)
@@ -392,10 +404,10 @@ summary(top100)
 library(pheatmap)
 head(top100)
 p.val=0.1 # FDR cutoff
-conds=top100[top100$padj.76<=p.val & !is.na(top100$padj.76),]
+conds=top100[top100$padj.UU<=p.val & !is.na(top100$padj.UU),] #all top 100 where the p- adjusted value is less than or equal to .1 (significant)
 length(conds[,1])
 
-exp=conds[,1:9] # change numbers to be your vsd data columns
+exp=conds[,1:6] #removing associated p-values from log fold change data
 means=apply(exp,1,mean) # means of rows
 explc=exp-means # subtracting them
 head(explc)
@@ -405,8 +417,8 @@ col0=colorRampPalette(rev(c("chocolate1","#FEE090","grey10", "cyan3","cyan")))(1
 
 pheatmap(explc,cluster_cols=T,scale="row",color=col0, show_rownames = F)
 
-###################################Heatmap for the genes in common
-rldpvals <- read.csv(file="Crep2016_RLDandPVALS.csv", row.names=1)
+###################################Heatmap for the genes in common ##We don't need this, genes in common for more than 1 treatment 
+rldpvals <- read.csv(file="RLDandPVALS.csv", row.names=1)
 head(rldpvals)
 p.val=0.1 # FDR cutoff
 conds=rldpvals[rldpvals$padj.76<=p.val & !is.na(rldpvals$padj.76) & rldpvals$padj.75<=p.val & !is.na(rldpvals$padj.75),]
@@ -424,12 +436,12 @@ col0=colorRampPalette(rev(c("chocolate1","#FEE090","grey10", "cyan3","cyan")))(1
 pheatmap(explc,cluster_cols=T,scale="row",color=col0, show_rownames = F)
 
 # Make annotation table for pheatmap
-ann = data.frame(cond = c('7.5', '7.5', '7.5', '7.6', '7.6', '7.6', '8', '8', '8'))
+ann = data.frame(cond = c('UU', 'UU', 'UU', 'NN', 'NN', 'NN'))
 rownames(ann) <- names(explc)
 
 # Set colors
-Var1        <- c("darkgoldenrod2",  "darkolivegreen3", "dodgerblue3")
-names(Var1) <- c("7.5", "7.6", "8")
+Var1        <- c("darkgoldenrod2",  "darkolivegreen3", "black")
+names(Var1) <- c("UU", "NN")
 anno_colors <- list(cond = Var1)
 
-pheatmap(as.matrix(explc),annotation_col=ann,annotation_colors=anno_colors,cex=1.2,color=col0,border_color=NA,clustering_distance_rows="correlation",clustering_distance_cols="correlation", show_rownames=T)
+pheatmap(as.matrix(explc),annotation_col=ann,annotation_colors=anno_colors,cex=.85,color=col0,border_color=NA,clustering_distance_rows="correlation",clustering_distance_cols="correlation", show_rownames=T)
