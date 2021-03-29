@@ -13,8 +13,19 @@ Madison Pacaro
 Jamie Poirier 
 
 
-# Introduction 
+# Introduction
 
+For this assignment, we used data presented in ["Examining the Role of DNA
+Methylation in Transcriptomic Plasticity of Early Stage Sea Urchins: Developmental and Maternal Effects in a Kelp Forest Herbivore"](https://www.frontiersin.org/articles/10.3389/fmars.2020.00205/full) by M. Strader et al. (2020) in Frontiers in Marine Science.
+
+In Strader et al.’s work, they explored the relationship between the dynamics of gene expression and the effects of epigenetic markers. It considers the extent of environmental effects on plasticity both within and between generations of sea urchins. They worked with Stronglyocentrotus purpuratus and simulated both upwelling and non-upwelling conditions, and examined connections in changes regarding DNA methylation, transcription, and spicule length of their offspring during embryonic development.   
+
+![*Stronglyocentrotus purpuratus*](C:/Users/jamie/OneDrive/Documents/bi586/assignment2/GO_enrichment/sea_urchin_upwelling/S.purpuratus.jpg)
+Figure 1: Stronglyocentrotus purpuratus: photo via. Wikipedia (Kirt L. Onthank)
+
+In their analysis, they used reduced representation bisulfite sequencing (RRBS) sequencing, pre-processing and analysis, which is a high-throughput technique used for analysis of methylation within a genome. Following this, they used RNA sequencing as well as differential gene expression analysis and weighted gene co-expression network analysis (WGCNA), which is used for the correlation and clustering of genes.
+
+They ultimately found that forms of genetic environmentally induced plasticity are similar within groups of genes, but on an individual level, these changes were largely unique. It also found that there were significant differences in methylation of CpG sites and gene expression based on maternal conditioning, and environmental conditions during embryonic development had a significant effect on spicule length. 
 
 
 # Version Control
