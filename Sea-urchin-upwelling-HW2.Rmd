@@ -4,7 +4,9 @@ output: html_document
 ---
 
 
-Title: 
+Title: Examining Differential Gene Expression in Strongylocentrotus purpuratus 
+(purple sea urchin) under upwelling vs. non-upwelling conditions. 
+
 Authors: 
 Victoria French
 Madison Pacaro 
@@ -60,18 +62,6 @@ library(pheatmap)
 
 
 ```
-
-```{r}
-package.version("dplyr")
-package.version("RColorBrewer")
-package.version("gplots")
-package.version("vegan")
-package.version("ggplot2")
-package.version("ggrepel")
-package.version("tidyverse")
-package.version("pheatmap")
-```
-
 
 We then set our working directory for the project.
 ```{r, results='hide'}
@@ -158,13 +148,15 @@ res
 Then, to look at the dispersion of our data, we plotted a visual representation of the DESeq object. This plot follows the general shape of a hockey stick, which shows that the dispersion fits well to the curve.
 ```{r}
 plotDispEsts(dds, main="Dispersion plot")
-
 ```
 
 
 # Treatment Comparisons
 
-Here, we are performing analyses to examine differentially expressed genes among our two treatment groups: upwelling vs. non-upwelling. In the first analysis, we specified non-upwelling (NN) as our control in the levels option and our results will therefore be in terms of upwelling compared to non-upwelling. *******Needs more explanation for pvals
+Here, we perform analyses to examine differentially expressed genes among our two treatment groups: upwelling vs. non-upwelling. In the first analysis, we specified non-upwelling (NN) as our control in the levels option and our results will therefore be in terms of upwelling compared to non-upwelling. 
+
+We looked at signficantly differentially expressed genes in upwelling conditions at verying levels of significance. At the highest confidence level we have 715 differentially expressed genes in upwelling vs. non-upwelling conditions. 
+
 ```{r}
 colData$UU<-factor(colData$treat, levels=c("UU","NN"))
 resUU <- results(dds, contrast=c("treat","UU","NN"))
@@ -173,11 +165,11 @@ table(resUU$padj<0.001)
 # 0.1=3039 - not valuable
 # 0.05=2289
 # 0.01=1344
-# 0.001 = 715
+# 0.001 =715
 
 ```
 
-We then summarized resUU. This allows us to see that there are genes removed in pairwise analysis due to low counts (23%) and we also see 5.4% of genes were downregulated in UU relative to NN. In addition, 7.2% of genes were upregulated in UU relative to NN.
+We summarized resUU. This allows us to see that there are genes removed in pairwise analysis due to low counts (23%) and we also see 5.4% of genes were downregulated in UU relative to NN. In addition, 7.2% of genes were upregulated in UU relative to NN.
 ```{r}
 summary(resUU)
 ```
@@ -187,16 +179,15 @@ Here we are using another method to look at differentially expressed genes, as w
 nrow(resUU[resUU$padj<0.05 & !is.na(resUU$padj),])   
 ```
 
-We then plotted a visual representation of differentially expressed genes and this shows........ *add explanation
+We plotted a visual representation of differentially expressed genes and this shows........ *add explanation
 ```{r}
 plotMA(resUU, main="NN vs UU") 
 ```
 
-We then summarized our results.
+We summarized our results.
 ```{r}
 results <- as.data.frame(resUU)
 head(results)
-
 ```
 
 Then, we examined upregulated and downregulated genes separately. Upregulated genes are genes with a positive logfold change and downregulated genes are genes with a negative logfold change.
@@ -207,16 +198,16 @@ nrow(resUU[resUU$padj<0.1 & resUU$log2FoldChange < 0 & !is.na(resUU$padj),])
 #DOWN in UU is 1304
 ```
 
-We then created a table to summarize our results from above. *show table??? either do head cd or cd?
+We created a table to summarize our results from above. 
 ```{r}
 write.table(resUU, file="UU_DEG.txt", quote=F, sep="\t") 
 
 cd <- read.table("UU_DEG.txt")
-head(cd)
+cd
 
 ```
 
-We then created a GO table with ranked p-values with directionality for each gene. We then saved the table as a CSV for future GO analysis.
+We created a GO table with ranked p-values with directionality for each gene. We then saved the table as a CSV for future GO analysis.
 ```{r}
 cd
 go_input_UU = cd %>%
@@ -233,10 +224,9 @@ write.csv(go_input_UU, file="UU_GO.csv", quote=F, row.names=FALSE)
 #in outlier folder
 ```
 
-Getting p-values 
+We bound the p-value from res comparisons and the p-adjusted values. 
 
 ```{r}
-#here we are binding two columns, the first column is the pval from res comparison of UU to NN and then the p adjusted values
 valUU=cbind(resUU$pvalue, resUU$padj)
 head(valUU)
 #this is pvalues and padjusted values
@@ -248,9 +238,9 @@ table(complete.cases(valUU))
 
 Making log fold change and p-value data table 
 
-```{r}
-#now doing r log transformation, this is important for making heat maps. it is normalization method and is also how we are going to make PCAs 
+Doing r log transformation, this is important for making heat maps. it is a normalization method and is also how we are going to make PCAs 
 
+```{r}
 rlog=rlogTransformation(dds, blind=TRUE) 
 rld=assay(rlog)
 head(rld)
@@ -259,14 +249,13 @@ colnames(rld)=paste(colData$treat)
 head(rld)
 length(rld[,1]) #length should be still same, indicating retention of all data
 
-#binding rld data and pvalues; ranking pvalues due to significance for heat map
+#binding rld data and pvalues in order to rank p-values for top 100 heatmap later on 
 rldpvals=cbind(rld,valUU)
 head(rldpvals)
-#bound r log normalized data with p-values
 dim(rldpvals) #looking at dimensions [1] 30284     8 , there are more columns here because we added columns of pvalues
 table(complete.cases(rldpvals))
 #FALSE  TRUE 
-#11745  18539 , we still have the same number of NAs (false) here
+#11745  18539 , sanity check: we still have the same number of NAs (false) here
 
 write.csv(rldpvals, "RLDandPVALS.csv", quote=F)
 
@@ -291,6 +280,10 @@ rownames(sampleDistMatrix)=paste(treat)
 #creating a heat map from the sampledistMatrix 
 heat.colors = colorRampPalette(rev(c("navy","beige")),bias=0.3)(100)
 pheatmap(sampleDistMatrix,color = heat.colors,cex=0.9,border_color=NA,cluster_rows=T,cluster_cols=T)
+
+#heatmap shows clustering - how similar samples are 
+#these are a good way to visualize overall expression between our samples
+#this heatmap looks good, it is showing the clustering of our treatments, which we expect 
 ```
 
 Principle Component Analysis 
@@ -305,8 +298,8 @@ pca <- prcomp(rld_t,center = TRUE, scale. = TRUE) #up to 6 principle components 
 head(pca)
 
 #we are interested in PC1 and PC2 bc these are the two principle components that explain the most variance
-#defining amount of variance described by PC1 and PC2 
 
+#defining amount of variance described by PC1 and PC2 
 li <- pca$sdev^2 / sum(pca$sdev^2)
 pc1v <- round(li[1] * 100, 1)
 pc2v <- round(li[2] * 100, 1)
@@ -317,6 +310,7 @@ pca_s$Samples = row.names(pca_s)
 pca_s$treat=colData$treat
 head(pca_s)
 
+#Plotting pca with ggplot
 cbPalette <- c("darkgoldenrod2",  "darkolivegreen3", "dodgerblue3")
 ggplot(pca_s, aes(PC1, PC2, color = treat, pch = treat)) +
   geom_point(size=3) +
@@ -330,7 +324,7 @@ ggplot(pca_s, aes(PC1, PC2, color = treat, pch = treat)) +
 head(pca)
 ```
 
-Statistical Analysis ###Check this 
+Statistical Analysis ############## Double check this significance; it was significant when first ran and now isn't?  #########
 
 ```{r}
 #ANOVA analysis testing if distances between samples on PCA are significantly different 
@@ -343,16 +337,16 @@ Heatmap for top 100 most significant differently expressed genes
 ```{r}
 rldpvals <- read.csv(file="RLDandPVALS.csv", row.names=1)
 head(rldpvals)
-rld_site= rldpvals[,1:6]
+rld_site= rldpvals[,1:6] #isolating vsd data columns 
 head(rld_site)
 gg=read.table("goAnnot_spu.tab",sep="\t", row.names=1)
 head(gg)
 
 nrow(rldpvals[rldpvals$padj.UU<0.01& !is.na(rldpvals$padj.UU),])
-#1344; isogroups extremely differently expressed (p-value <0.01) 
+#1344; isogroups extremely differently expressed (p-adjusted value <0.01) 
 
-#Ranking p-values to find top 100 most differentially expressed genes 
-topnum= 100 # number of DEGS in heatmap 
+#Ranking p-adjusted values to find top 100 most differentially expressed genes 
+topnum= 100 # number of DEGS in final heatmap 
 head(rldpvals)
 top100=head(rldpvals[order(rldpvals$padj.UU), ],topnum)
 head(top100)
@@ -368,6 +362,7 @@ length(conds[,1])
 exp=conds[,1:6] #removing associated p-values from log fold change data
 means=apply(exp,1,mean) # means of rows
 explc=exp-means # subtracting them
+colnames(explc)=c("NN1", "NN2", "NN3", "UU1", "UU2", "UU3")
 head(explc)
 
 ccol=colorRampPalette(rev(c("red","chocolate1","#FEE090","grey10", "cyan3","cyan")))(100)
@@ -389,6 +384,40 @@ anno_colors <- list(cond = Var1)
 
 pheatmap(as.matrix(explc),annotation_col=ann,annotation_colors=anno_colors,cex=.85,color=col0,border_color=NA,clustering_distance_rows="correlation",clustering_distance_cols="correlation", show_rownames=T)
 ```
+
+#Figures
+
+```{r}
+#Figure 1
+cbPalette <- c("darkgoldenrod2",  "darkolivegreen3", "dodgerblue3")
+ggplot(pca_s, aes(PC1, PC2, color = treat, pch = treat)) +
+  geom_point(size=3) +
+  #  geom_text_repel(aes(label=Samples)) +
+  scale_colour_manual(values=cbPalette)+
+  theme_bw() +
+  # geom_density2d(alpha=.5)+
+  geom_polygon(alpha=.2)+
+  ggtitle("Gene Expression")+
+  theme(plot.title = element_text(hjust = 0.5))+
+  xlab(paste0("PC1: ",pc1v,"% variance")) +
+  ylab(paste0("PC2: ",pc2v,"% variance")) 
+```
+Figure 1: Principal component analysis of gene expression. % variance explained by principal component specified on respective axes labels. Treatment replicates differentiated by shape and color according to legend. NN=Non-upwelling conditions. UU=upwelling conditions 
+
+```{r}
+#Figure 2
+pheatmap(as.matrix(explc),annotation_col=ann,annotation_colors=anno_colors,cex=.85,color=col0,border_color=NA,clustering_distance_rows="correlation",clustering_distance_cols="correlation", show_rownames=T)
+```
+Figure 2: Differentially expressed genes by treatment with associated gene annotation. Scale of expression is log2fold change relative to the gene mean. Condition key specifies treatment. UU= upwelling conditions NN= non-upwelling conditions NA=Undefined 
+
+```{r}
+#Figure 3 #GO 
+```
+
+
+
+#Conclusion 
+
 
 
 ```{r setup, include=FALSE}
