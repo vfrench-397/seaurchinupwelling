@@ -92,7 +92,7 @@ totalCounts #How many reads associated with an isogroup for each treatment
 #NN1 #NN2 #NN3 #UU1 #UU2 #UU3 
 #8555156 #8577700 #8948115 #8570174 #7455015 #6376636
 #our raw counts range from 6mil to 8mil
-barplot(totalCounts, col=c("coral", "coral", "coral", "red", "red", "red"), ylab="raw counts")
+barplot(totalCounts, col=c("slateblue", "slateblue", "slateblue", "royalblue4", "royalblue4", "royalblue4"), ylab="raw counts")
 #raw counts generally uniformly distributed for each treatment! Good signal for normalization 
 
 
@@ -191,7 +191,7 @@ head(go_input_UU)
 colnames(go_input_UU) <- c("gene", "pval")
 head(go_input_UU)
 write.csv(go_input_UU, file="UU_GO.csv", quote=F, row.names=FALSE)
-#this csv is in the outlier folder
+
 
 
 ###############################################################################################
@@ -230,7 +230,7 @@ table(complete.cases(rldpvals))
 #11745  18539 , we still have the same number of NAs (false) here
 
 write.csv(rldpvals, "RLDandPVALS.csv", quote=F)
-#this is saved in outlier folder - can i move to main folder??
+
 
 colnames(rld)=paste(colData$treat)
 head(rld)
