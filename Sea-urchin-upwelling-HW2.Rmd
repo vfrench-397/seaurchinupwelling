@@ -556,7 +556,7 @@ results=gomwuPlot(input,goAnnotations,goDivision.MF,
 
 #Conclusion 
 
-
+Overall, our results were for the most part consistent with those described in the original research. We can see some changes in differential expression in regards to a few particular groups of genes in response to the environmental stressors (pH and temperature in this case), similar to the findings of the study. The GO analysis shows data that suggests the stress response of the urchins is shown in its gene expression, such as the reduced expression of signaling in the molecular function section and the changes in RNA modifications and processing in the biological process section, which was what was found in the original paper as well. This provides some evidence for the concept that environmental conditions can induce changes in gene expression, most strongly shown by the maternal conditioning group's data.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
