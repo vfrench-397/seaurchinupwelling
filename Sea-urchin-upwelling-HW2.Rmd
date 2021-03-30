@@ -1,17 +1,8 @@
 ---
-title: "Sea-urchin-Upwelling-HW2"
+title: "Examining Differential Gene Expression in *Strongylocentrotus purpuratus* Under Upwelling vs. Non-upwelling Conditions"
+author: Victoria French, Madison Pacaro & Jamie Poirier
 output: html_document
 ---
-
-
-Title: Examining Differential Gene Expression in Strongylocentrotus purpuratus 
-(purple sea urchin) under upwelling vs. non-upwelling conditions. 
-
-Authors: 
-Victoria French
-Madison Pacaro 
-Jamie Poirier 
-
 
 # Introduction
 
@@ -20,8 +11,10 @@ Methylation in Transcriptomic Plasticity of Early Stage Sea Urchins: Development
 
 In Strader et al.’s work, they explored the relationship between the dynamics of gene expression and the effects of epigenetic markers. It considers the extent of environmental effects on plasticity both within and between generations of sea urchins. They worked with Stronglyocentrotus purpuratus and simulated both upwelling and non-upwelling conditions, and examined connections in changes regarding DNA methylation, transcription, and spicule length of their offspring during embryonic development.   
 
-![*Stronglyocentrotus purpuratus*](C:/Users/jamie/OneDrive/Documents/bi586/assignment2/GO_enrichment/sea_urchin_upwelling/S.purpuratus.jpg)
-Figure 1: Stronglyocentrotus purpuratus: photo via. Wikipedia (Kirt L. Onthank)
+
+![*Strongylocentrotus purpuratus*](C:/Users/Maddy/Documents/BI586/seaurchinupwelling/urchin.jpg)
+
+Figure 1: *Stronglyocentrotus purpuratus*: photo via. Wikipedia (Kirt L. Onthank)
 
 In their analysis, they used reduced representation bisulfite sequencing (RRBS) sequencing, pre-processing and analysis, which is a high-throughput technique used for analysis of methylation within a genome. Following this, they used RNA sequencing as well as differential gene expression analysis and weighted gene co-expression network analysis (WGCNA), which is used for the correlation and clustering of genes.
 
@@ -32,21 +25,34 @@ They ultimately found that forms of genetic environmentally induced plasticity a
 
 
 R version 4.0.3 was used for all analyses. 
-DESeq2 package version 1.30.1
-affycoretools package version 1.62.0
-arrayQualityMetrics package version 3.46.0
-genefilter package version 1.72.1
-Biobase package version 2.50.0
-dplyr package version 1.0.5
-RColorBrewer package version 1.1-2
-gplots package version 3.1.1
-vegan package version 2.5-7
-ggplot 2 package version 3.3.3
-ggrepel package version 0.9.1
-tidyverse package version 1.3.0
-pheatmap package version 1.0.12
-go.obo version 
 
+DESeq2 package version 1.30.1
+
+affycoretools package version 1.62.0
+
+arrayQualityMetrics package version 3.46.0
+
+genefilter package version 1.72.1
+
+Biobase package version 2.50.0
+
+dplyr package version 1.0.5
+
+RColorBrewer package version 1.1-2
+
+gplots package version 3.1.1
+
+vegan package version 2.5-7
+
+ggplot 2 package version 3.3.3
+
+ggrepel package version 0.9.1
+
+tidyverse package version 1.3.0
+
+pheatmap package version 1.0.12
+
+go.obo version 1.2
 
 # Data Analysis & Methods
 
@@ -70,7 +76,6 @@ library(pheatmap)
 We then set our working directory for the project.
 ```{r, results='hide'}
 setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling")
-setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling")
 ```
 
 Next, we read in our raw count data, and determined the length of the data. 
@@ -82,6 +87,7 @@ length(countData[,1])
 
 The length of our data is 30284. This is the number of genes we have represented in our data set.
 
+
 We then remaned our data by our two treatments: NN = non-upwelling and UU = upwelling conditions.
 ```{r}
 names(countData)=c("NN", "NN", "NN", "UU", "UU", "UU")
@@ -91,22 +97,21 @@ head(countData)
 
 # Outlier Analysis
 
-We then conducted array quality metrics to detect and remove outliers in our data. We first specified a new directory for outlier data and our treatments.
+We conducted array quality metrics to detect and remove outliers in our data and specified the directory for outlier data.
 ```{r, results='hide'}
-setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling/outlier")
-v=setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling/outlier")
+v=setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling")
 treat=c("NN", "NN", "NN", "UU", "UU", "UU")
 ```
 
 Here, we are creating colData, which is a data frame associating sample with treatment.
 ```{r}
 g=data.frame(treat)
-g
 colData=g
+colData
 ```
 
 We now are calling on DESeq2 to create a model for our data, which is storing the results of analysis of differential expression and asking how our design varies by treatment. We then normalized our data.
-```{r}
+```{r warning=FALSE}
 
 dds=DESeqDataSetFromMatrix(countData=countData,
                            colData = g,
@@ -115,19 +120,14 @@ vsd.ge=assay(vst(dds))
 rl=vst(dds)
 ```
 
-Using arrayQualityMetrics, we then identified any outliers in our data. An outlier in UU was detected under "Distances between arrays." We will be keeping this outlier in our data because it was only offensive in distance between arrays, but not in boxplots or MA plots. Based on the barplot of our total counts data below, we will see even distribution between our treatments, which is another reason we are keeping this outlier.
+Using arrayQualityMetrics, we then identified any outliers in our data, which can be seen by clicking the link below. An outlier in UU was detected under "Distances between arrays." We will be keeping this outlier in our data because it was only offensive in distance between arrays, but not in boxplots or MA plots. Based on the barplot of our total counts data below, we will see even distribution between our treatments, which is another reason we are keeping this outlier.
 
-#https://scc-ondemand1.bu.edu/rnode/scc-wi3/26578/files/assignment2/seaurchinupwelling/index.html
-
-```{r}
+```{r eval=FALSE}
 e=ExpressionSet(assay(rl), AnnotatedDataFrame(as.data.frame(colData(rl))))
 arrayQualityMetrics(e,outdir=v,intgroup=c("treat"),force=T)
 ```
 
-We then changed directories to our original directory.
-```{r}
-setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling")
-```
+[arrayQualityMetrics Report](C:/Users/Maddy/Documents/BI586/seaurchinupwelling/index.html)
 
 We then analyzed our count data by looking at the total number of counts. From this output, we can see that our raw counts range from approximately 6 million to 8 million reads across treatments. We then plotted a bar plot of the counts which shows that our raw counts are generally uniformly distributed for each treatment, which is a good signal for normalization. 
 ```{r}
@@ -141,7 +141,7 @@ max(totalCounts)
 ```
 
 We then created the DESeq object and saved the results of the model.
-```{r}
+```{r warning=FALSE, message=FALSE}
 dds<-DESeq(dds)
 
 head(dds) 
@@ -157,7 +157,7 @@ plotDispEsts(dds, main="Dispersion plot")
 
 # Treatment Comparisons
 
-Here, we perform analyses to examine differentially expressed genes among our two treatment groups: upwelling vs. non-upwelling. In the first analysis, we specified non-upwelling (NN) as our control in the levels option and our results will therefore be in terms of upwelling compared to non-upwelling. 
+Next, I performed analyses to examine differentially expressed genes among our two treatment groups: upwelling vs. non-upwelling. In the first analysis, we specified non-upwelling (NN) as our control in the levels option and our results will therefore be in terms of upwelling compared to non-upwelling. 
 
 We looked at signficantly differentially expressed genes in upwelling conditions at verying levels of significance. At the highest confidence level we have 715 differentially expressed genes in upwelling vs. non-upwelling conditions. 
 
@@ -202,17 +202,16 @@ nrow(resUU[resUU$padj<0.1 & resUU$log2FoldChange < 0 & !is.na(resUU$padj),])
 ```
 
 We created a table to summarize our results from above. 
-```{r}
+```{r results='hide'}
 write.table(resUU, file="UU_DEG.txt", quote=F, sep="\t") 
 
 cd <- read.table("UU_DEG.txt")
-cd
+
 
 ```
 
-We created a GO table with ranked p-values with directionality for each gene. We then saved the table as a CSV for future GO analysis.
+We then created a GO table with ranked p-values with directionality for each gene. We then saved the table as a CSV for future GO analysis.
 ```{r}
-cd
 go_input_UU = cd %>%
   tibble::rownames_to_column(var = "iso") %>%
   mutate(mutated_p = -log(pvalue)) %>%
@@ -226,6 +225,7 @@ head(go_input_UU)
 write.csv(go_input_UU, file="UU_GO.csv", quote=F, row.names=FALSE)
 
 ```
+
 
 We bound the p-value from res comparisons and the p-adjusted values. We then created a log fold change p-value data table.
 ```{r}
@@ -265,12 +265,10 @@ write.csv(rldpvals, "RLDandPVALS.csv", quote=F)
 ```
 
 Then we created our Sample Distance heat map. Our heat map shows clustering of similar samples by upwelling and non-upwelling conditions, which we expect. This is a good way to visualize overall expression between our samples.
-```{r}
+```{r warning=FALSE, message=FALSE}
 rldpvals <- read.csv(file="RLDandPVALS.csv", row.names=1)
-head(rldpvals)
 rld=rldpvals[,1:6] 
 #making rld which is just columns 1-6 and will cut off p-values to just leave us with r log normalized isogroups
-head(rld)
 
 sampleDists <- dist(t(rld))
 sampleDistMatrix <- as.matrix( sampleDists )
@@ -287,7 +285,7 @@ pheatmap(sampleDistMatrix,color = heat.colors,cex=0.9,border_color=NA,cluster_ro
 # Principal Component Analysis 
 
 We then performed a principle components analysis (PCA). We first transposed our data frame and then removed columns within the dataframe with zero variance, meaning they were not diferentially expressed genes.
-```{r}
+```{r results='hide'}
 rld_t=t(rld) 
 
 which(apply(rld_t, 2, var)==0)
@@ -295,7 +293,7 @@ rld_t <- rld_t[ , which(apply(rld_t, 2, var) != 0)]
 ```
 
 We then created the PCA figure with ggplot. We are interested in PC1 and PC2 because these are the two principle components that explain the most variance in our samples. 
-```{r}
+```{r results='hide'}
 pca <- prcomp(rld_t,center = TRUE, scale. = TRUE) #up to 6 principle components because n=6 samples 
 head(pca)
 
@@ -310,8 +308,10 @@ pca_s <- pca_s[,c(1,2)] #pulling out first two PCs
 pca_s$Samples = row.names(pca_s)
 pca_s$treat=colData$treat
 head(pca_s)
+```
 
-#Plotting pca with ggplot
+Here we plotted our PCA with ggplot:
+```{r}
 cbPalette <- c("darkgoldenrod2",  "darkolivegreen3", "dodgerblue3")
 ggplot(pca_s, aes(PC1, PC2, color = treat, pch = treat)) +
   geom_point(size=3) +
@@ -322,13 +322,12 @@ ggplot(pca_s, aes(PC1, PC2, color = treat, pch = treat)) +
   geom_polygon(alpha=.2)+
   xlab(paste0("PC1: ",pc1v,"% variance")) +
   ylab(paste0("PC2: ",pc2v,"% variance")) 
-head(pca)
 ```
 
 
-# Statistical Analysis ############## Double check this significance; it was significant when first ran and now isn't?  #########
+# Statistical Analysis 
 
-We performed an ANOVA analysis to test if distances between samples on our PCA are significantly different. We see that ________
+We performed an ANOVA analysis to test if distances between samples on our PCA are significantly different. Based on this analysis, we get an F statistic of 0.1, which is not statistically significant.
 ```{r}
 adonis(pca$x ~ treat, data = pca_s, method='eu', na.rm = TRUE)
 ```
@@ -375,7 +374,7 @@ col0=colorRampPalette(rev(c("chocolate1","#FEE090","grey10", "cyan3","cyan")))(1
 pheatmap(explc,cluster_cols=T,scale="row",color=col0, show_rownames = F)
 ```
 
-We then added gene annotation to top 100 heatmap 
+We then added gene annotation to top 100 heatmap.
 ```{r}
 ann = data.frame(cond = c('UU', 'UU', 'UU', 'NN', 'NN', 'NN'))
 rownames(ann) <- names(explc)
@@ -390,16 +389,15 @@ pheatmap(as.matrix(explc),annotation_col=ann,annotation_colors=anno_colors,cex=.
 
 # GO Analysis 
 
-
+For our GO analysis, we started with assigning variables for gomwuStats arguments and inputted the files we generated above.
 ```{r}
-#Assigning variables for gomwuStats arguments
 input="UU_GO.csv" #isogroup with corresponding p-value 
 goAnnotations="goAnnot_spu.tab" 
 goDatabase="go-basic.obo"
 source("gomwu.functions.R") #reading in code for functions needed to enact GO analysis 
 ```
 
-#GO Stats 
+# GO Statistics 
 
 First we find that under Biological Process, 30 categories dropped because they were too broadly expressed to be considered enriched, 961 were too small so we are left with a remainder of 837. 409 of those were not redundant and 69 were left after secondary clustering at a 10% False Discovery Rate. 
 
@@ -427,7 +425,7 @@ goDivision.CC="CC" #change and run GO for each major functional group (BP, MF, C
 gomwuStats(input, goDatabase, goAnnotations, goDivision.CC, perlPath = "perl", largest=0.1, smallest=5, clusterCutHeight=0.25)
 ```
 
-21 too broad, 721 too small, remaining 545. 391 non-redundant with 69 after secondary clustering. 
+Under Molecular Function we see 21 categories that are too broad, 721 too small, and 545 remaining. 391 are non-redundant with 69 after secondary clustering. 
 ```{r}
 #GO terms under Molecular Function 
 
@@ -436,12 +434,12 @@ goDivision.MF="MF" #change and run GO for each major functional group (BP, MF, C
 gomwuStats(input, goDatabase, goAnnotations, goDivision.MF, perlPath = "perl", largest=0.1, smallest=5, clusterCutHeight=0.25)
 ```
 
-Plotting GO terms 
+# Plotting GO terms 
 
-```{r}
+```{r warning=FALSE}
 #BP 
 
-quartz() #hash out if on windows
+#quartz() #hash out if on windows
 results=gomwuPlot(input,goAnnotations,goDivision.BP,
 	absValue=-log(0.05,10), 
 	level1=0.05, # 1st Threshold for plotting.
@@ -455,10 +453,10 @@ results=gomwuPlot(input,goAnnotations,goDivision.BP,
 #restricted cutoffs to reduce number of GO categories displayed
 ```
 
-```{r}
+```{r warning=FALSE}
 #CC 
 
-quartz()
+#quartz()
 results=gomwuPlot(input,goAnnotations,goDivision.CC,
 	absValue=-log(0.05,10),  
 	level1=0.05, 
@@ -470,10 +468,10 @@ results=gomwuPlot(input,goAnnotations,goDivision.CC,
 )
 ```
 
-```{r}
+```{r warning=FALSE}
 #MF 
 
-quartz()
+#quartz()
 results=gomwuPlot(input,goAnnotations,goDivision.MF,
 	absValue=-log(0.05,10),
 	level1=0.05,
@@ -484,10 +482,10 @@ results=gomwuPlot(input,goAnnotations,goDivision.MF,
 	colors=c("dodgerblue2","firebrick1","skyblue2","lightcoral") 
 )
 ```
+ 
+# Figures
 
-#Figures
-
-```{r}
+```{r echo=FALSE}
 #Figure 1
 cbPalette <- c("darkgoldenrod2",  "darkolivegreen3", "dodgerblue3")
 ggplot(pca_s, aes(PC1, PC2, color = treat, pch = treat)) +
@@ -502,19 +500,21 @@ ggplot(pca_s, aes(PC1, PC2, color = treat, pch = treat)) +
   xlab(paste0("PC1: ",pc1v,"% variance")) +
   ylab(paste0("PC2: ",pc2v,"% variance")) 
 ```
+
 Figure 1: Principal component analysis of gene expression. % variance explained by principal component specified on respective axes labels. Treatment replicates differentiated by shape and color according to legend. NN=Non-upwelling conditions. UU=upwelling conditions 
 
-```{r}
+```{r echo=FALSE}
 #Figure 2
 pheatmap(as.matrix(explc),annotation_col=ann,annotation_colors=anno_colors,cex=.85,color=col0,border_color=NA,clustering_distance_rows="correlation",clustering_distance_cols="correlation", show_rownames=T)
 ```
+
 Figure 2: Differentially expressed genes by treatment with associated gene annotation. Scale of expression is log2fold change relative to the gene mean. Condition key specifies treatment. UU= upwelling conditions NN= non-upwelling conditions NA=Undefined 
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 #Figure 3 
-quartz()
+#quartz()
 results=gomwuPlot(input,goAnnotations,goDivision.BP,
-	absValue=0.001,
+	absValue=-log(0.05,10),
 	level1=0.05,
 	level2=0.01, 
 	level3=0.001,
@@ -524,12 +524,13 @@ results=gomwuPlot(input,goAnnotations,goDivision.BP,
 )
 
 ```
+
 Figure 3: Gene ontology (GO) enrichment plot for the biological processses section showing the significantly enriched GO terms. Here, terms shown in blue represent downregulation and the red show upregulation.
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 #Figure 4
-quartz()
+#quartz()
 results=gomwuPlot(input,goAnnotations,goDivision.CC,
-	absValue=0.001,
+	absValue=-log(0.05,10),
 	level1=0.05,
 	level2=0.01, 
 	level3=0.001,
@@ -538,12 +539,13 @@ results=gomwuPlot(input,goAnnotations,goDivision.CC,
 	colors=c("dodgerblue2","firebrick1","skyblue2","lightcoral") 
 )
 ```
+
 Figure 4: Gene ontology (GO) enrichment plot for the cellular component section showing the significantly enriched GO terms. Terms shown in blue represent downregulation and the red show upregulation.
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 #Figure 5
-quartz()
+#quartz()
 results=gomwuPlot(input,goAnnotations,goDivision.MF,
-	absValue=0.001,
+	absValue=-log(0.05,10),
 	level1=0.05,
 	level2=0.01, 
 	level3=0.001,
@@ -552,15 +554,13 @@ results=gomwuPlot(input,goAnnotations,goDivision.MF,
 	colors=c("dodgerblue2","firebrick1","skyblue2","lightcoral") 
 )
 ```
+
 Figure 5: Gene ontology (GO) enrichment plot for the molecular function section showing the significantly enriched GO terms. Terms shown in blue represent downregulation and the red show upregulation.
 
-#Conclusion 
+# Conclusion 
 
 Overall, our results were for the most part consistent with those described in the original research. We can see some changes in differential expression in regards to a few particular groups of genes in response to the environmental stressors (pH and temperature in this case), similar to the findings of the study. The GO analysis shows data that suggests the stress response of the urchins is shown in its gene expression, such as the reduced expression of signaling in the molecular function section and the changes in RNA modifications and processing in the biological process section, which was what was found in the original paper as well. This provides some evidence for the concept that environmental conditions can induce changes in gene expression, most strongly shown by the maternal conditioning group's data.
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 
 
