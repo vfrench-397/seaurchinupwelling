@@ -15,13 +15,13 @@
 
 ################################################################
 # First, press command-D on mac or ctrl-shift-H in Rstudio and navigate to the directory containing scripts and input files. Then edit, mark and execute the following bits of code, one after another.
-setwd("/your/directory/here")
+setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling")
 
 # Edit these to match your data file names: 
-input="7.5_GO.csv" # two columns of comma-separated values: gene id, continuous measure of significance. To perform standard GO enrichment analysis based on Fisher's exact test, use binary measure (0 or 1, i.e., either sgnificant or not).
-goAnnotations="Crep454_iso2go.tab" # two-column, tab-delimited, one line per gene, multiple GO terms separated by semicolon. If you have multiple lines per gene, use nrify_GOtable.pl prior to running this script.
-goDatabase="go.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml
-goDivision="CC" # either MF, or BP, or CC
+input="UU_GO.csv" # two columns of comma-separated values: gene id, continuous measure of significance. To perform standard GO enrichment analysis based on Fisher's exact test, use binary measure (0 or 1, i.e., either sgnificant or not).
+goAnnotations="goAnnot_spu.tab" # two-column, tab-delimited, one line per gene, multiple GO terms separated by semicolon. If you have multiple lines per gene, use nrify_GOtable.pl prior to running this script.
+goDatabase="go-basic.obo" # download from http://www.geneontology.org/GO.downloads.ontology.shtml #getting umbrella terms associated with GO terms 
+goDivision="CC" # either MF, or BP, or CC #3 major functional groups 
 source("gomwu.functions.R")
 
 
@@ -34,7 +34,9 @@ gomwuStats(input, goDatabase, goAnnotations, goDivision,
 #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
 #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
 #	Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
-)
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision, perlPath=perl, largest=0.1, smallest=5,  clusterCutHeight=0.25)
+
 # do not continue if the printout shows that no GO terms pass 10% FDR.
 
 
