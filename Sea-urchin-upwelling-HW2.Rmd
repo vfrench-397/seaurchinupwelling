@@ -45,6 +45,7 @@ ggplot 2 package version 3.3.3
 ggrepel package version 0.9.1
 tidyverse package version 1.3.0
 pheatmap package version 1.0.12
+go.obo version 
 
 
 # Data Analysis & Methods
@@ -124,7 +125,7 @@ rl=vst(dds)
 
 Using arrayQualityMetrics, we then identified any outliers in our data. An outlier in UU was detected under "Distances between arrays." We will be keeping this outlier in our data because it was only offensive in distance between arrays, but not in boxplots or MA plots. Based on the barplot of our total counts data below, we will see even distribution between our treatments, which is another reason we are keeping this outlier.
 
-#show html file here #link? #https://scc-ondemand1.bu.edu/rnode/scc-wi3/26578/files/assignment2/seaurchinupwelling/index.html
+#https://scc-ondemand1.bu.edu/rnode/scc-wi3/26578/files/assignment2/seaurchinupwelling/index.html
 
 ```{r}
 e=ExpressionSet(assay(rl), AnnotatedDataFrame(as.data.frame(colData(rl))))
@@ -396,6 +397,101 @@ anno_colors <- list(cond = Var1)
 pheatmap(as.matrix(explc),annotation_col=ann,annotation_colors=anno_colors,cex=.85,color=col0,border_color=NA,clustering_distance_rows="correlation",clustering_distance_cols="correlation", show_rownames=T)
 ```
 
+#GO Analysis 
+```{r}
+#Assigning variables for gomwuStats arguments
+input="UU_GO.csv" #isogroup with corresponding p-value 
+goAnnotations="goAnnot_spu.tab" 
+goDatabase="go-basic.obo"
+source("gomwu.functions.R") #reading in code for functions needed to enact GO analysis 
+```
+
+#GO Stats 
+
+First we find that under Biological Process, 30 categories dropped because they were too broadly expressed to be considered enriched, 961 were too small so we are left with a remainder of 837. 409 of those were not redundant and 69 were left after secondary clustering at a 10% False Discovery Rate. 
+
+```{r}
+#GO terms under Biological Process 
+
+goDivision.BP="BP" #change and run GO for each major functional group (BP, MF, CC)
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision.BP, perlPath = "perl",
+           largest=0.1, # setting maximum proportion of total genes before GO terms not represented
+           smallest=5, # setting minimum number of different genes needed under a GO term to be represented 
+           clusterCutHeight=0.25 #setting specificity of represented GO terms #Increase for more specificity #decrease for more general umbrella terms)
+)
+#Largest and smallest set to define reasonable levels of enrichment
+
+```
+
+Under Cellular component we see 12 categories dropped for being too broad, 234 too small with a remaining 173. 118 were non-redundant and we are left with 29 significant after secondary clustering
+
+```{r}
+#GO terms under Cellular Component
+
+goDivision.CC="CC" #change and run GO for each major functional group (BP, MF, CC)
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision.CC, perlPath = "perl", largest=0.1, smallest=5, clusterCutHeight=0.25)
+```
+
+21 too broad, 721 too small, remaining 545. 391 non-redundant with 69 after secondary clustering. 
+```{r}
+#GO terms under Molecular Function 
+
+goDivision.MF="MF" #change and run GO for each major functional group (BP, MF, CC)
+
+gomwuStats(input, goDatabase, goAnnotations, goDivision.MF, perlPath = "perl", largest=0.1, smallest=5, clusterCutHeight=0.25)
+```
+
+Plotting GO terms 
+
+```{r}
+#BP 
+
+quartz() #hash out if on windows
+results=gomwuPlot(input,goAnnotations,goDivision.BP,
+	absValue=0.001,  #absolute value set at 0.001 so all non-zero genes are displayed as good genes, standard GO enrichment.
+	level1=0.05, # 1st Threshold for plotting.
+	level2=0.01, # Each level represents greater signficance 
+	level3=0.001, 
+	txtsize=1.2,    
+	treeHeight=0.5, # height of the hierarchical clustering tree
+	colors=c("dodgerblue2","firebrick1","skyblue2","lightcoral") 
+)
+
+#restricted cutoffs to reduce number of GO categories displayed
+```
+
+```{r}
+#CC 
+
+quartz()
+results=gomwuPlot(input,goAnnotations,goDivision.CC,
+	absValue=0.001,  
+	level1=0.05, 
+	level2=0.01, 
+	level3=0.001, 
+	txtsize=1.2,
+	treeHeight=0.5, 
+	colors=c("dodgerblue2","firebrick1","skyblue2","lightcoral") 
+)
+```
+
+```{r}
+#MF 
+
+quartz()
+results=gomwuPlot(input,goAnnotations,goDivision.MF,
+	absValue=0.001,
+	level1=0.05,
+	level2=0.01, 
+	level3=0.001,
+	txtsize=1.2,
+	treeHeight=0.5, 
+	colors=c("dodgerblue2","firebrick1","skyblue2","lightcoral") 
+)
+```
+
 #Figures
 
 ```{r}
@@ -422,9 +518,47 @@ pheatmap(as.matrix(explc),annotation_col=ann,annotation_colors=anno_colors,cex=.
 Figure 2: Differentially expressed genes by treatment with associated gene annotation. Scale of expression is log2fold change relative to the gene mean. Condition key specifies treatment. UU= upwelling conditions NN= non-upwelling conditions NA=Undefined 
 
 ```{r}
-#Figure 3 #GO 
+#Figure 3 
+quartz()
+results=gomwuPlot(input,goAnnotations,goDivision.BP,
+	absValue=0.001,
+	level1=0.05,
+	level2=0.01, 
+	level3=0.001,
+	txtsize=1.2,
+	treeHeight=0.5, 
+	colors=c("dodgerblue2","firebrick1","skyblue2","lightcoral") 
+)
+
 ```
 
+```{r}
+#Figure 4
+quartz()
+results=gomwuPlot(input,goAnnotations,goDivision.CC,
+	absValue=0.001,
+	level1=0.05,
+	level2=0.01, 
+	level3=0.001,
+	txtsize=1.2,
+	treeHeight=0.5, 
+	colors=c("dodgerblue2","firebrick1","skyblue2","lightcoral") 
+)
+```
+
+```{r}
+#Figure 5
+quartz()
+results=gomwuPlot(input,goAnnotations,goDivision.MF,
+	absValue=0.001,
+	level1=0.05,
+	level2=0.01, 
+	level3=0.001,
+	txtsize=1.2,
+	treeHeight=0.5, 
+	colors=c("dodgerblue2","firebrick1","skyblue2","lightcoral") 
+)
+```
 
 
 #Conclusion 

@@ -35,7 +35,7 @@ gomwuStats(input, goDatabase, goAnnotations, goDivision,
 #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
 #	Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
 
-gomwuStats(input, goDatabase, goAnnotations, goDivision, perlPath=perl, largest=0.1, smallest=5,  clusterCutHeight=0.25)
+gomwuStats(input, goDatabase, goAnnotations, goDivision, perlPath="/usr/local/lib64/perl5 /usr/local/share/perl5", largest=0.1, smallest=5,  clusterCutHeight=0.25)
 
 # do not continue if the printout shows that no GO terms pass 10% FDR.
 
