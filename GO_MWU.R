@@ -16,6 +16,9 @@
 ################################################################
 # First, press command-D on mac or ctrl-shift-H in Rstudio and navigate to the directory containing scripts and input files. Then edit, mark and execute the following bits of code, one after another.
 setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling")
+setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling")
+getwd()
+library(ape)
 
 # Edit these to match your data file names: 
 input="UU_GO.csv" # two columns of comma-separated values: gene id, continuous measure of significance. To perform standard GO enrichment analysis based on Fisher's exact test, use binary measure (0 or 1, i.e., either sgnificant or not).
@@ -24,21 +27,25 @@ goDatabase="go-basic.obo" # download from http://www.geneontology.org/GO.downloa
 goDivision="CC" # either MF, or BP, or CC #3 major functional groups 
 source("gomwu.functions.R")
 
+read.table("goAnnot_spu.tab", sep = "\t", header = T, check.names = F)
 
 # Calculating stats. It might take ~3 min for MF and BP. Do not rerun it if you just want to replot the data with different cutoffs, go straight to gomwuPlot. If you change any of the numeric values below, delete the files that were generated in previos runs first.
 gomwuStats(input, goDatabase, goAnnotations, goDivision,
-	perlPath="D:\Strawberry\perl\bin\perl.exe", # replace with full path to perl executable if it is not in your system's PATH already
+	perlPath="C:/Strawberry/perl/bin/perl.exe", # replace with full path to perl executable if it is not in your system's PATH already
 	largest=0.1,  # a GO category will not be considered if it contains more than this fraction of the total number of genes
 	smallest=5,   # a GO category should contain at least this many genes to be considered
-	clusterCutHeight=0.25, # threshold for merging similar (gene-sharing) terms. See README for details.
+	clusterCutHeight=0.25 # threshold for merging similar (gene-sharing) terms. See README for details.
 #	Alternative="g" # by default the MWU test is two-tailed; specify "g" or "l" of you want to test for "greater" or "less" instead. 
 #	Module=TRUE,Alternative="g" # un-remark this if you are analyzing a SIGNED WGCNA module (values: 0 for not in module genes, kME for in-module genes). In the call to gomwuPlot below, specify absValue=0.001 (count number of "good genes" that fall into the module)
 #	Module=TRUE # un-remark this if you are analyzing an UNSIGNED WGCNA module 
+)
 
-gomwuStats(input, goDatabase, goAnnotations, goDivision, perlPath="/usr/local/lib64/perl5 /usr/local/share/perl5", largest=0.1, smallest=5,  clusterCutHeight=0.25)
+
+#for mac
+gomwuStats(input, goDatabase, goAnnotations, goDivision, perlPath=perl, largest=0.1, smallest=5,  clusterCutHeight=0.25)
+
 
 # do not continue if the printout shows that no GO terms pass 10% FDR.
-
 
 # Plotting results
 quartz()
