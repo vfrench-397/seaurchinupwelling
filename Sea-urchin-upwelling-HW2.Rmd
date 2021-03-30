@@ -524,7 +524,7 @@ results=gomwuPlot(input,goAnnotations,goDivision.BP,
 )
 
 ```
-
+Figure 3: Gene ontology (GO) enrichment plot for the biological processses section showing the significantly enriched GO terms. Here, terms shown in blue represent downregulation and the red show upregulation.
 ```{r}
 #Figure 4
 quartz()
@@ -538,7 +538,7 @@ results=gomwuPlot(input,goAnnotations,goDivision.CC,
 	colors=c("dodgerblue2","firebrick1","skyblue2","lightcoral") 
 )
 ```
-
+Figure 4: Gene ontology (GO) enrichment plot for the cellular component section showing the significantly enriched GO terms. Terms shown in blue represent downregulation and the red show upregulation.
 ```{r}
 #Figure 5
 quartz()
@@ -552,7 +552,7 @@ results=gomwuPlot(input,goAnnotations,goDivision.MF,
 	colors=c("dodgerblue2","firebrick1","skyblue2","lightcoral") 
 )
 ```
-
+Figure 5: Gene ontology (GO) enrichment plot for the molecular function section showing the significantly enriched GO terms. Terms shown in blue represent downregulation and the red show upregulation.
 
 #Conclusion 
 
