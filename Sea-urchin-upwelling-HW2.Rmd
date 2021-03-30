@@ -443,7 +443,7 @@ Plotting GO terms
 
 quartz() #hash out if on windows
 results=gomwuPlot(input,goAnnotations,goDivision.BP,
-	absValue=0.001,  #absolute value set at 0.001 so all non-zero genes are displayed as good genes, standard GO enrichment.
+	absValue=-log(0.05,10), 
 	level1=0.05, # 1st Threshold for plotting.
 	level2=0.01, # Each level represents greater signficance 
 	level3=0.001, 
@@ -460,7 +460,7 @@ results=gomwuPlot(input,goAnnotations,goDivision.BP,
 
 quartz()
 results=gomwuPlot(input,goAnnotations,goDivision.CC,
-	absValue=0.001,  
+	absValue=-log(0.05,10),  
 	level1=0.05, 
 	level2=0.01, 
 	level3=0.001, 
@@ -475,7 +475,7 @@ results=gomwuPlot(input,goAnnotations,goDivision.CC,
 
 quartz()
 results=gomwuPlot(input,goAnnotations,goDivision.MF,
-	absValue=0.001,
+	absValue=-log(0.05,10),
 	level1=0.05,
 	level2=0.01, 
 	level3=0.001,
