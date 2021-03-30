@@ -52,8 +52,6 @@ go.obo version
 
 First, we loaded all the required packages for our analyses.
 ```{r, warning=FALSE, message=FALSE}
-
-#DESeq 
 library(DESeq2) 
 library(affycoretools)
 library(arrayQualityMetrics)
@@ -67,18 +65,12 @@ library(ggplot2)
 library(ggrepel)
 library(tidyverse)
 library(pheatmap)
-
-#library(VennDiagram)
-
-#GO
-
-
 ```
 
 We then set our working directory for the project.
 ```{r, results='hide'}
 setwd("C:/Users/Maddy/Documents/BI586/seaurchinupwelling")
-
+setwd("/usr4/bi594/vfrench3/assignment2/seaurchinupwelling")
 ```
 
 Next, we read in our raw count data, and determined the length of the data. 
@@ -172,9 +164,8 @@ We looked at signficantly differentially expressed genes in upwelling conditions
 ```{r}
 colData$UU<-factor(colData$treat, levels=c("UU","NN"))
 resUU <- results(dds, contrast=c("treat","UU","NN"))
-#how many FDR < 10%?
 table(resUU$padj<0.001) 
-# 0.1=3039 - not valuable
+# 0.1=3039 - not significant
 # 0.05=2289
 # 0.01=1344
 # 0.001 =715
@@ -191,7 +182,7 @@ Here we are using another method to look at differentially expressed genes, as w
 nrow(resUU[resUU$padj<0.05 & !is.na(resUU$padj),])   
 ```
 
-We plotted a visual representation of differentially expressed genes and this shows........ *add explanation
+We plotted log fold change by mean of normalized counts to produce a visual representation of differentially expressed genes. We kept the y limits to 4,-4 as anything beyond is extremely differentially expressed.  
 ```{r}
 plotMA(resUU, main="NN vs UU") 
 ```
@@ -298,7 +289,7 @@ pheatmap(sampleDistMatrix,color = heat.colors,cex=0.9,border_color=NA,cluster_ro
 #this heatmap looks good, it is showing the clustering of our treatments, which we expect 
 ```
 
-Principle Component Analysis 
+Principal Component Analysis 
 ```{r}
 rld_t=t(rld) #transposing data frame 
 
@@ -340,11 +331,11 @@ Statistical Analysis ############## Double check this significance; it was signi
 
 ```{r}
 #ANOVA analysis testing if distances between samples on PCA are significantly different 
-#treatment (at pvalue 0.003) has a specific impact on gene differential expression 
+#treatment (at pvalue 0.003) has a significant impact on gene differential expression 
 adonis(pca$x ~ treat, data = pca_s, method='eu', na.rm = TRUE)
 ```
 
-Heatmap for top 100 most significant differently expressed genes
+Heatmap for top 100 most significant differentially expressed genes
 
 ```{r}
 rldpvals <- read.csv(file="RLDandPVALS.csv", row.names=1)
@@ -390,7 +381,7 @@ ann = data.frame(cond = c('UU', 'UU', 'UU', 'NN', 'NN', 'NN'))
 rownames(ann) <- names(explc)
 
 # Set colors
-Var1        <- c("darkgoldenrod2",  "darkolivegreen3", "black")
+Var1        <- c("purple",  "Navy", "Lavender")
 names(Var1) <- c("UU", "NN")
 anno_colors <- list(cond = Var1)
 
